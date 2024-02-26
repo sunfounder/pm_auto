@@ -1,0 +1,286 @@
+import logging
+import gpiozero
+import subprocess
+import os
+
+from .utils import run_command
+from .i2c import I2C
+
+default_config = {
+    "gpio_fan_pin": 6,
+}
+
+FANS = ['pwm_fan', 'gpio_fan', 'spc_fan']
+
+FAN_LEVELS = [
+    {
+        "name": "OFF",
+        "low": -200,
+        "high": 55,
+        "percent": 0,
+    }, {
+        "name": "LOW",
+        "low": 45,
+        "high": 65,
+        "percent": 40,
+    }, {
+        "name": "MEDIUM",
+        "low": 55,
+        "high": 75,
+        "percent": 80,
+    }, {
+        "name": "HIGH",
+        "low": 65,
+        "high": 100,
+        "percent": 100,
+    },
+]
+class FanControl:
+    def __init__(self, config, fans=[], log=None):
+        if log is None:
+            log = logging.getLogger(__name__)
+        self.log = log
+
+        self.gpio_fan = Fan()
+        self.spc_fan = Fan()
+        self.pwm_fan = Fan()
+
+        if 'gpio_fan' in fans:
+            pin = config["gpio_fan_pin"]
+            self.gpio_fan = GPIOFan(pin)
+            if not self.gpio_fan.is_ready:
+                self.log.warning("GPIO Fan init failed, disable gpio_fan control")
+        if 'spc_fan' in fans:
+            self.spc_fan = SPCFan()
+            if not self.spc_fan.is_ready:
+                self.log.warning("SPC Fan init failed, disable spc_fan control")
+        if 'pwm_fan' in fans:
+            self.pwm_fan = PWMFan()
+            if not self.pwm_fan.is_ready:
+                self.log.warning("PWM Fan init failed, disable pwm_fan control")
+
+        self.temperature_unit = 'C'
+        self.interval = 1
+        self.update_config(config)
+
+        self.level = 0
+        self.initial = True
+    
+    def update_config(self, config):
+        if "gpio_fan_pin" in config:
+            self.gpio_fan.change_pin(config["gpio_fan_pin"])
+
+
+    def get_cpu_temperature(self):
+        cmd = 'cat /sys/class/thermal/thermal_zone0/temp'
+        try:
+            temp = int(subprocess.check_output(cmd,shell=True).decode())
+            return round(temp/1000, 2)
+        except Exception as e:
+            self.log.error(f'get_cpu_temperature error: {e}')
+            return 0.0
+
+    def run(self):
+        if self.pwm_fan.is_ready and self.pwm_fan.is_supported():
+            if self.initial:
+                self.log.info("PWM Fan is supported, sync all other fan with pwm fan")
+                self.initial = False
+            # Sync all other fan with pwm fan
+            pwm_fan_speed = self.pwm_fan.get_speed()
+            if self.spc_fan.is_ready:
+                self.spc_fan.set_power(pwm_fan_speed)
+            if self.gpio_fan.is_ready:
+                if pwm_fan_speed > 0:
+                    self.gpio_fan.on()
+                else:
+                    self.gpio_fan.off()
+                return
+        
+        temperature = self.get_cpu_temperature()
+        changed = False
+        direction = ""
+        if temperature < FAN_LEVELS[self.level]["low"]:
+            self.level -= 1
+            changed = True
+            direction = "low"
+        elif temperature > FAN_LEVELS[self.level]["high"]:
+            self.level += 1
+            changed = True
+            direction = "high"
+        
+        if changed or self.initial:
+            self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
+            power = FAN_LEVELS[self.level]['percent']
+            if self.gpio_fan.is_ready:
+                if self.level > 1:
+                    self.gpio_fan.on()
+                else:
+                    self.gpio_fan.off()
+            if self.spc_fan.is_ready:
+                self.spc_fan.set_power(power)
+            if self.pwm_fan.is_ready:
+                self.pwm_fan.set_state(self.level)
+            
+            if self.initial:
+                self.log.info(f"cpu temperature: {temperature} \"C", level="INFO")
+            else:
+                self.log.info(
+                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}", level="INFO")
+    
+            self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}", level="INFO")
+            self.log.info(f"set fan power: {power}", level="INFO")
+            self.initial = False
+
+class Fan:
+    def __init__(self, *args, log=None, **kwargs):
+        if log is None:
+            log = logging.getLogger(__name__)
+        self.log = log
+        self.is_ready = False
+    
+    # Decorator to check if the fan is ready
+    @staticmethod
+    def check_ready(func):
+        def wrapper(self, *args, **kwargs):
+            if not self.is_ready:
+                self.log.warning(f"{self.__class__.__name__} is not ready")
+                return
+            return func(self, *args, **kwargs)
+        return wrapper
+
+class GPIOFan(Fan):
+    def __init__(self, pin, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pin = pin
+        self.fan = gpiozero.DigitalOutputDevice(pin)
+        self.is_ready = True
+
+    def change_pin(self, pin):
+        self.fan.close()
+        self.pin = pin
+        try:
+            self.fan = gpiozero.DigitalOutputDevice(pin)
+            self.is_ready = True
+        except Exception as e:
+            self.log.error(f"Change pin error: {e}")
+            self.is_ready = False
+
+    @Fan.check_ready
+    def on(self):
+        self.fan.on()
+
+    @Fan.check_ready
+    def off(self):
+        self.fan.off()
+
+class SPCFan(Fan):
+    I2C_ADDRESS = 0x5A
+    GET_FAN_SPEED = 0x21
+    SET_FAN_SPEED = 0x00
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        addressed = I2C.scan()
+        if self.I2C_ADDRESS not in addressed:
+            self.is_ready = False
+            return
+        self.i2c = I2C(self.I2C_ADDRESS)
+
+        self.power = 100
+        self.is_ready = True
+
+    @Fan.check_ready
+    def on(self):
+        self.set_power(self.power)
+
+    @Fan.check_ready
+    def off(self):
+        self.set_power(0)
+
+    @Fan.check_ready
+    def set_power(self, power: int):
+        '''
+        power: 0 ~ 100
+        '''
+        if not isinstance(power, int):
+            raise ValueError("Invalid power")
+        
+        power = max(0, min(100, power))
+        self.power = power
+
+        self.i2c.write_byte_data(self.SET_FAN_SPEED, power)
+
+        return power
+
+    @Fan.check_ready
+    def get_power(self):
+        return self.i2c.read_byte_data(self.GET_FAN_SPEED)
+
+class PWMFan(Fan):
+    # Systems that need to replace system pwm fan control
+    # Please use all lowercase
+    TEMP_CONTROL_INTERVENE_OS = [
+        'ubuntu',
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _, os_id = run_command("lsb_release -a |grep ID | awk -F ':' '{print $2}'")
+        os_id = os_id.strip()
+        _, os_code_name = run_command("lsb_release -a |grep Codename | awk -F ':' '{print $2}'")
+        os_code_name = os_code_name.strip()
+
+        self.enable_control = False
+        if os_id.lower() in self.TEMP_CONTROL_INTERVENE_OS or os_code_name.lower() in self.TEMP_CONTROL_INTERVENE_OS:
+            self.log.warning("System do not support pwm fan control")
+            self.enable_control = True
+        self.is_ready = True
+
+    @Fan.check_ready
+    def is_supported(self):
+        return not self.enable_control
+
+    @Fan.check_ready
+    def get_state(self):
+        path = '/sys/class/thermal/cooling_device0/cur_state'
+        try:
+            with open(path, 'r') as f:
+                cur_state = int(f.read())
+            return cur_state
+        except Exception as e:
+            print(f'read pwm fan state error: {e}')
+            return 0
+
+    @Fan.check_ready
+    def set_state(self, level: int):
+        '''
+        level: 0 ~ 3
+        '''
+        if (isinstance(level, int)):
+            if level > 3:
+                level = 3
+            elif level < 0:
+                level = 0
+
+            cmd = f"echo '{level}' | sudo tee -a /sys/class/thermal/cooling_device0/cur_state"
+            result = subprocess.check_output(cmd, shell=True)
+
+            return result
+
+    @Fan.check_ready
+    def get_speed(self):
+        '''
+        path =  '/sys/devices/platform/cooling_fan/hwmon/*/fan1_input'
+        '''
+        dir = '/sys/devices/platform/cooling_fan/hwmon/'
+        secondary_dir = os.listdir(dir)
+        path = f'{dir}/{secondary_dir[0]}/fan1_input'
+
+        os.listdir
+        try:
+            with open(path, 'r') as f:
+                speed = int(f.read())
+            return speed
+        except Exception as e:
+            print(f'read fan1 speed error: {e}')
+            return 0
