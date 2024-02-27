@@ -284,10 +284,11 @@ class OLED(object):
 
     def draw_text(self, text, x, y, fill=1, align='left'):
         text = str(text)
+        text_width = self.font_8.getlength(text)
         if align == 'center':
-            x -= self.draw.textsize(text, font=self.font_8)[0] / 2
+            x -= text_width / 2
         elif align == 'right':
-            x -= self.draw.textsize(text, font=self.font_8)[0]
+            x -= text_width
         self.draw.text((x, y), text=text, font=self.font_8, fill=fill)
 
     def draw_bar_graph_horizontal(self, percent, x, y, width, height):
