@@ -3,7 +3,6 @@ import threading
 import logging
 from sf_rpi_status import get_cpu_temperature, get_cpu_percent, get_memory_info, get_disk_info, get_ips
 
-from .database import Database
 from .utils import format_bytes
 
 from .oled import OLED, Rect
