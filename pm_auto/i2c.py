@@ -60,10 +60,8 @@ class I2C():
             data_all = []
             d = "{:X}".format(send)
             d = "{}{}".format("0" if len(d)%2 == 1 else "", d)  
-            # print(d)
             for i in range(len(d)-2, -1, -2):                   # taking two chars in each iteration from right to left 
                 tmp = int(d[i:i+2], 16)                         # convert 2-digit decimal to hex
-                # print(tmp)
                 data_all.append(tmp)                            
             data_all.reverse()
         elif isinstance(send, list):
@@ -108,13 +106,10 @@ class I2C():
             data = "%x"%data
             if len(data) % 2 == 1:
                 data = "0" + data
-            # print(data)
             for i in range(0, len(data), 2):
-                # print(data[i:i+2])
                 data_all.append(int(data[i:i+2], 16))
         else:
             raise ValueError("memery write require arguement of bytearray, list, int less than 0xFF")
-        # print(data_all)
         self._i2c_write_i2c_block_data(addr, memaddr, data_all)
 
     def mem_read(self, data, addr, memaddr, timeout=5000, addr_size=8):  # read data

@@ -250,7 +250,7 @@ class PWMFan(Fan):
                 cur_state = int(f.read())
             return cur_state
         except Exception as e:
-            print(f'read pwm fan state error: {e}')
+            self.log.error(f'read pwm fan state error: {e}')
             return 0
 
     @Fan.check_ready
@@ -284,5 +284,5 @@ class PWMFan(Fan):
                 speed = int(f.read())
             return speed
         except Exception as e:
-            print(f'read fan1 speed error: {e}')
+            self.log.error(f'read fan1 speed error: {e}')
             return 0
