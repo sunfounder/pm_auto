@@ -132,6 +132,22 @@ class FanControl:
             self.log.info(f"set fan power: {power}", level="INFO")
             self.initial = False
 
+    def off(self):
+        if self.gpio_fan.is_ready:
+            self.gpio_fan.off()
+        if self.spc_fan.is_ready:
+            self.spc_fan.off()
+        if self.pwm_fan.is_ready:
+            self.pwm_fan.off()
+
+    def close(self):
+        if self.gpio_fan.is_ready:
+            self.gpio_fan.close()
+        if self.spc_fan.is_ready:
+            self.spc_fan.close()
+        if self.pwm_fan.is_ready:
+            self.pwm_fan.close()
+
 class Fan:
     def __init__(self, *args, get_logger=None, **kwargs):
         if get_logger is None:
@@ -175,6 +191,12 @@ class GPIOFan(Fan):
     def off(self):
         self.fan.off()
 
+    @Fan.check_ready
+    def close(self):
+        self.off()
+        self.is_ready = False
+        self.fan.close()
+
 class SPCFan(Fan):
     I2C_ADDRESS = 0x5A
     GET_FAN_SPEED = 0x21
@@ -217,6 +239,12 @@ class SPCFan(Fan):
     @Fan.check_ready
     def get_power(self):
         return self.i2c.read_byte_data(self.GET_FAN_SPEED)
+
+    @Fan.check_ready
+    def close(self):
+        self.off()
+        self.is_ready = False
+        self.i2c.close()
 
 class PWMFan(Fan):
     # Systems that need to replace system pwm fan control
@@ -286,3 +314,13 @@ class PWMFan(Fan):
         except Exception as e:
             self.log.error(f'read fan1 speed error: {e}')
             return 0
+
+    @Fan.check_ready
+    def off(self):
+        if not self.is_supported():
+            self.set_state(0)
+
+    @Fan.check_ready
+    def close(self):
+        self.off()
+        self.is_ready = False

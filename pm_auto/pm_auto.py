@@ -173,4 +173,6 @@ class PMAuto:
             self.oled.display()
         if self.ws2812 is not None and self.ws2812.is_ready():
             self.ws2812.stop()
+        if self.fan is not None:
+            self.fan.close()
         self.log.info("PM Auto Stop")
