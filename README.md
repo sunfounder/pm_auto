@@ -12,7 +12,7 @@ Pironman Auto is a tool to control all peripherals on your Pironman.
 
 ```bash
 # Install development dependencies
-apt-get -y install python3 python3-pip python3-venv git
+apt-get -y install python3 python3-pip python3-venv git libjpeg-dev
 pip3 install build
 
 # Clone the repository
