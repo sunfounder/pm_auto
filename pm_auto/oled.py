@@ -74,7 +74,7 @@ class SSD1306Base(object):
     """
 
     def __init__(self, width, height, i2c_bus=None, i2c_address=SSD1306_I2C_ADDRESS_1, i2c=None):
-        self._log = logging.getLogger('Adafruit_SSD1306.SSD1306Base')
+
         self._i2c = I2C()
         self.addr = i2c_address
         self.width = width
@@ -240,10 +240,11 @@ class Rect:
         return (self.x, self.y, self.x + int(self.width*pecent/100.0), self.y2)
 
 class OLED(object):
-    def __init__(self, log=None):
-        if log is None:
-            log = logging.getLogger(__name__)
-        self.log = log
+    def __init__(self, get_logger=None):
+        if get_logger is None:
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+
         self.oled = None
         addresses = self.check_oled()
         if len(addresses) == 0:

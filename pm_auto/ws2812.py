@@ -10,7 +10,7 @@ from .utils import map_value
 from math import cos, pi
 
 RGB_STYLES = [
-    'solid', 'breathing', 'flow', 'flow_reverse', 'rainbow', 'rainbow_reverse', 'cycle_all'
+    'solid', 'breathing', 'flow', 'flow_reverse', 'rainbow', 'rainbow_reverse', 'hue_cycle'
 ]
 
 default_config = {
@@ -27,11 +27,10 @@ class WS2812():
     lights_order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,]
     leap_order = [0, 3, 1, 2, 4, 12, 5, 11, 6, 10, 7, 9, 8, 15, 13, 14]
 
-    def __init__(self, config=default_config, log=None):
-        if log is None:
-            log = logging.getLogger(__name__)
-        self.log = log
-
+    def __init__(self, config=default_config, get_logger=None):
+        if get_logger is None:
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
 
         self.led_count = None
         self.color = None
@@ -50,7 +49,7 @@ class WS2812():
         try:
             self.init()
         except Exception as e:
-            log.error("Failed to initialize WS2812: \n%s" % e)
+            self.log.error("Failed to initialize WS2812: \n%s" % e)
 
 
     def init(self):
@@ -281,7 +280,7 @@ class WS2812():
     def rainbow_reverse(self):
         self.rainbow(reverse=True)
 
-    def cycle_all(self):
+    def hue_cycle(self):
         self.counter_max = 360
         delay = map_value(self.speed, 0, 100, 0.1, 0.005)
         hue = self.counter

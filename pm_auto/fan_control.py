@@ -36,10 +36,11 @@ FAN_LEVELS = [
     },
 ]
 class FanControl:
-    def __init__(self, config, fans=[], log=None):
-        if log is None:
-            log = logging.getLogger(__name__)
-        self.log = log
+    def __init__(self, config, fans=[], logger=None):
+        if logger is None:
+            self.log = logging.getLogger(__name__)
+        else:
+            self.log = logger(__name__)
 
         self.gpio_fan = Fan()
         self.spc_fan = Fan()
@@ -132,10 +133,11 @@ class FanControl:
             self.initial = False
 
 class Fan:
-    def __init__(self, *args, log=None, **kwargs):
-        if log is None:
-            log = logging.getLogger(__name__)
-        self.log = log
+    def __init__(self, *args, get_logger=None, **kwargs):
+        if get_logger is None:
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+
         self.is_ready = False
     
     # Decorator to check if the fan is ready

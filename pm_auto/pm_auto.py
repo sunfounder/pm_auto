@@ -25,29 +25,26 @@ DEFAULT_CONFIG = {
 }
 
 class PMAuto:
-    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], log=None):
-        if log is None:
-            log = logging.getLogger(__name__)
-        self.log = log
-        self.status_db = Database('pm_status', log)
-        if not self.status_db.client:
-            log.error("Failed to connect to influxdb")
-            return
+    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], get_logger=None):
+        if get_logger is None:
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
 
         self.oled = None
         self.ws2812 = None
         self.fan = None
         if 'oled' in peripherals:
-            self.oled = OLED(self.log)
+            self.oled = OLED(get_logger=get_logger)
             if not self.oled.is_ready():
                 self.log.error("Failed to initialize OLED")
         if 'ws2812' in peripherals:
-            self.ws2812 = WS2812(config, self.log)
+            self.ws2812 = WS2812(config, get_logger=get_logger)
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812")
             self.ws2812.start()
         if 'fan' in peripherals:
-            self.fan = FanControl(config, fans=peripherals, log=self.log)
+            self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
+        self.peripherals = peripherals
 
         self.last_ip = ''
         self.ip_index = 0
@@ -72,29 +69,8 @@ class PMAuto:
                 self.log.error("Invalid interval")
                 return
             self.interval = config['interval']
-        if 'peripherals' in config:
-            if not isinstance(config['peripherals'], dict):
-                self.log.error("Invalid peripherals")
-                return
-            if 'oled' in config['peripherals']:
-                if self.oled is None or not self.oled.is_ready():
-                    self.oled = OLED(self.log)
-                    if not self.oled.is_ready():
-                        self.log.error("Failed to initialize OLED")
-            if 'ws2812' in config['peripherals']:
-                if self.ws2812 is not None and self.ws2812.is_ready():
-                    self.ws2812.stop()
-                ws2812_config = config['peripherals']['ws2812']
-                self.ws2812 = WS2812(ws2812_config, self.log)
-                if not self.ws2812.is_ready():
-                    self.log.error("Failed to initialize WS2812")
-                self.ws2812.start()
-            if 'fan' in config['peripherals']:
-                if not isinstance(config['peripherals']['fan'], dict):
-                    self.log.error("Invalid fan config")
-                    return
-                fan_config = config['peripherals']['fan']
-                self.fan = FanControl(fan_config, self.log)
+        if 'ws2812' in self.peripherals:
+            self.ws2812.update_config(config)
 
 
     def get_data(self):
@@ -155,7 +131,7 @@ class PMAuto:
         # cpu temp
         temp = cpu_temp_c if self.temperature_unit == 'C' else cpu_temp_f
         self.oled.draw_text(f'{temp:.1f}°{self.temperature_unit}', 15, 37, align='center')
-        self.oled.draw_pieslice_chart(temp, 15, 48, 15, 0, 180)
+        self.oled.draw_pieslice_chart(cpu_temp_c, 15, 48, 15, 0, 180)
         # RAM
         self.oled.draw_text(f'RAM:  {memory_used}/{memory_total} {memory_unit}', *memory_info_rect.coord())
         self.oled.draw_bar_graph_horizontal(memory_percent, *memory_rect.coord(), *memory_rect.size())
