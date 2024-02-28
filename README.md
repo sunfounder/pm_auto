@@ -3,15 +3,10 @@
 Pironman Auto is a tool to control all peripherals on your Pironman.
 
 - [PM Auto](#pm-auto)
-  - [Todo](#todo)
   - [Installation](#installation)
   - [Usage](#usage)
   - [About SunFounder](#about-sunfounder)
   - [Contact us](#contact-us)
-
-## Todo
-
-- Change font path
 
 ## Installation
 
@@ -40,7 +35,6 @@ systemctl unmask influxdb
 systemctl enable influxdb
 systemctl start influxdb
 ```
-
 
 ## Usage
 
