@@ -1,14 +1,18 @@
 import time
 import threading
 import logging
-from sf_rpi_status import get_cpu_temperature, get_cpu_percent, get_memory_info, get_disk_info, get_ips
+from sf_rpi_status import \
+    get_cpu_temperature, \
+    get_cpu_percent, \
+    get_memory_info, \
+    get_disk_info, \
+    get_ips, \
+    shutdown
 
-from .utils import format_bytes
+from .utils import format_bytes, BasicClass
 
-from .oled import OLED, Rect
 from .ws2812 import WS2812
-from .fan_control import FanControl, FANS
-
+from .fan_control import FanControl
 
 app_name = 'pm_auto'
 
@@ -23,33 +27,27 @@ DEFAULT_CONFIG = {
     "interval": 1,
 }
 
-class PMAuto:
-    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], get_logger=None):
-        if get_logger is None:
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+class PMAuto(BasicClass):
+    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self.oled = None
         self.ws2812 = None
         self.fan = None
+        self.spc = None
         if 'oled' in peripherals:
-            self.oled = OLED(get_logger=get_logger)
-            if not self.oled.is_ready():
-                self.log.error("Failed to initialize OLED")
+            self.oled = OLEDAuto(**kwargs)
         if 'ws2812' in peripherals:
-            self.ws2812 = WS2812(config, get_logger=get_logger)
+            self.ws2812 = WS2812(config, **kwargs)
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812")
             self.ws2812.start()
-        if 'fan' in peripherals:
-            self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
+        if 'fan' in peripherals or 'spc' in peripherals:
+            self.fan = FanControl(config, fans=peripherals, **kwargs)
+        if 'spc' in peripherals:
+            self.spc = SPCAuto(**kwargs)
         self.peripherals = peripherals
 
-        self.last_ip = ''
-        self.ip_index = 0
-        self.ip_show_next_timestamp = 0
-        self.ip_show_next_interval = 3
-        self.temperature_unit = 'C'
         self.interval = 1
     
         self.thread = None
@@ -62,7 +60,8 @@ class PMAuto:
             if config['temperature_unit'] not in ['C', 'F']:
                 self.log.error("Invalid temperature unit")
                 return
-            self.temperature_unit = config['temperature_unit']
+            if self.oled is not None:
+                self.oled.temperature_unit = config['temperature_unit']
         if 'interval' in config:
             if not isinstance(config['interval'], (int, float)):
                 self.log.error("Invalid interval")
@@ -71,6 +70,56 @@ class PMAuto:
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
 
+    def loop(self):
+        while self.running:
+            if self.oled is not None and self.oled.is_ready():
+                self.oled.run()
+            if self.fan is not None:
+                self.fan.run()
+            if self.spc is not None and self.spc.is_ready():
+                self.spc.run()
+            time.sleep(self.interval)
+
+    def start(self):
+        if self.running:
+            self.log.warning("Already running")
+            return
+        self.running = True
+        self.thread = threading.Thread(target=self.loop)
+        self.thread.start()
+        self.log.info("PM Auto Start")
+
+    def stop(self):
+        if not self.running:
+            self.log.warning("Already stopped")
+            return
+        self.running = False
+        self.thread.join()
+        if self.oled is not None and self.oled.is_ready():
+            self.oled.clear()
+            self.oled.display()
+        if self.ws2812 is not None and self.ws2812.is_ready():
+            self.ws2812.stop()
+        if self.fan is not None:
+            self.fan.close()
+        self.log.info("PM Auto Stop")
+
+class OLEDAuto(BasicClass):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        from .oled import OLED, Rect
+        self.oled = OLED(**kwargs)
+        self.Rect = Rect
+        if not self.oled.is_ready():
+            self.log.error("Failed to initialize OLED")
+            return
+        self._is_ready = self.oled.is_ready()
+
+        self.last_ip = ''
+        self.ip_index = 0
+        self.ip_show_next_timestamp = 0
+        self.ip_show_next_interval = 3
+        self.temperature_unit = 'C'
 
     def get_data(self):
         memory_info = get_memory_info()
@@ -117,11 +166,11 @@ class PMAuto:
         self.oled.clear()
 
         # ---- display info ----
-        ip_rect =           Rect(39,  0, 88, 10)
-        memory_info_rect =  Rect(39, 17, 88, 10)
-        memory_rect =       Rect(39, 29, 88, 10)
-        disk_info_rect =    Rect(39, 41, 88, 10)
-        disk_rect =         Rect(39, 53, 88, 10)
+        ip_rect =           self.Rect(39,  0, 88, 10)
+        memory_info_rect =  self.Rect(39, 17, 88, 10)
+        memory_rect =       self.Rect(39, 29, 88, 10)
+        disk_info_rect =    self.Rect(39, 41, 88, 10)
+        disk_rect =         self.Rect(39, 53, 88, 10)
 
         # cpu usage
         self.oled.draw_text('CPU', 15, 0, align='center')
@@ -143,35 +192,65 @@ class PMAuto:
         # draw the image buffer
         self.oled.display()
 
-    def loop(self):
-        while self.running:
-            data = self.get_data()
-            if self.oled is not None and self.oled.is_ready():
-                self.handle_oled(data)
-            if self.fan is not None:
-                self.fan.run()
-            time.sleep(self.interval)
+    def run(self):
+        data = self.get_data()
+        self.handle_oled(data)
 
-    def start(self):
-        if self.running:
-            self.log.warning("Already running")
+class SPCAuto(BasicClass):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        from spc.spc import SPC
+        self.spc = SPC(**kwargs)
+        if not self.spc.is_ready():
+            self._is_ready = False
             return
-        self.running = True
-        self.thread = threading.Thread(target=self.loop)
-        self.thread.start()
-        self.log.info("PM Auto Start")
 
-    def stop(self):
-        if not self.running:
-            self.log.warning("Already stopped")
+        self._is_ready = True
+        self.shutdown_request = 0
+        self.is_plugged_in = False
+
+    def is_ready(self):
+        return self._is_ready
+
+    def handle_shutdown(self):
+        if self.spc is None or not self.spc.is_ready():
             return
-        self.running = False
-        self.thread.join()
-        if self.oled is not None and self.oled.is_ready():
-            self.oled.clear()
-            self.oled.display()
-        if self.ws2812 is not None and self.ws2812.is_ready():
-            self.ws2812.stop()
-        if self.fan is not None:
-            self.fan.close()
-        self.log.info("PM Auto Stop")
+
+        shutdown_request = self.spc.read_shutdown_request()
+        if shutdown_request != self.shutdown_request:
+            self.shutdown_request = shutdown_request
+            self.log.debug(f"Shutdown request: {shutdown_request}")
+        if shutdown_request in self.spc.SHUTDOWN_REQUESTS:
+            if shutdown_request == self.spc.SHUTDOWN_REQUEST_LOW_POWER:
+                self.log.info('Low power shutdown.')
+            elif shutdown_request == self.spc.SHUTDOWN_REQUEST_BUTTON:
+                self.log.info('Button shutdown.')
+            shutdown()
+
+    def handle_external_input(self):
+        if self.spc is None or not self.spc.is_ready():
+            return
+
+        if 'external_input' not in self.spc.device.peripherals:
+            return
+
+        if 'battery' not in self.spc.device.peripherals:
+            return
+
+        is_plugged_in = self.spc.read_is_plugged_in()
+        if is_plugged_in != self.is_plugged_in:
+            self.is_plugged_in = is_plugged_in
+            if is_plugged_in == True:
+                self.log.info(f"External input plug in")
+            else:
+                self.log.info(f"External input unplugged")
+        if is_plugged_in == False:
+            shutdown_pct = self.spc.read_shutdown_battery_pct()
+            current_pct= self.spc.read_battery_percentage()
+            if current_pct < shutdown_pct:
+                self.log.info(f"Battery is below {shutdown_pct}, shutdown!", level="INFO")
+                shutdown()
+
+    def run(self):
+        self.handle_external_input()
+        self.handle_shutdown()

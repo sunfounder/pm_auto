@@ -45,3 +45,14 @@ def format_bytes(size, to_unit=None):
     # 如果目标单位未定义
     else:
         return format_bytes_auto(size)
+
+class BasicClass:
+    def __init__(self, get_logger=None):
+        if get_logger is None:
+            import logging
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+        self._is_ready = False
+
+    def is_ready(self):
+        return self._is_ready

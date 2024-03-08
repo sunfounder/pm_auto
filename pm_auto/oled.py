@@ -24,6 +24,7 @@ from __future__ import division
 from PIL import Image, ImageDraw, ImageFont
 from pkg_resources import resource_filename
 import logging
+from .utils import BasicClass
 
 from .i2c import I2C
 
@@ -239,11 +240,9 @@ class Rect:
     def rect(self, pecent=100):
         return (self.x, self.y, self.x + int(self.width*pecent/100.0), self.y2)
 
-class OLED(object):
-    def __init__(self, get_logger=None):
-        if get_logger is None:
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+class OLED(BasicClass):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.oled = None
         addresses = self.check_oled()
@@ -252,9 +251,7 @@ class OLED(object):
         else:
             self.oled = SSD1306_128_64(i2c_address=addresses[0])
             self.init()
-
-    def is_ready(self):
-        return self.oled is not None
+            self._is_ready = True
 
     def check_oled(self):
         addressed = I2C.scan()

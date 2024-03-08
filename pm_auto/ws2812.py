@@ -6,7 +6,7 @@ import logging
 import board
 import neopixel_spi as neopixel
 
-from .utils import map_value
+from .utils import map_value, BasicClass
 from math import cos, pi
 
 RGB_STYLES = [
@@ -22,15 +22,13 @@ default_config = {
     'speed': 50,
 }
 
-class WS2812():
+class WS2812(BasicClass):
 
     lights_order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,]
     leap_order = [0, 3, 1, 2, 4, 12, 5, 11, 6, 10, 7, 9, 8, 15, 13, 14]
 
-    def __init__(self, config=default_config, get_logger=None):
-        if get_logger is None:
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config=default_config, **kwargs):
+        super().__init__(**kwargs)
 
         self.led_count = None
         self.color = None
@@ -62,9 +60,7 @@ class WS2812():
         time.sleep(0.01)
         self.strip.fill(0)
         self.strip.show()
-
-    def is_ready(self):
-        return self.strip is not None
+        self._is_ready = True
 
     def update_config(self, config):
         if 'rgb_led_count' in config:

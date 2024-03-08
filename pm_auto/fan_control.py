@@ -1,10 +1,8 @@
 import logging
-import gpiozero
 import subprocess
 import os
 
-from .utils import run_command
-from .i2c import I2C
+from .utils import run_command, BasicClass
 
 default_config = {
     "gpio_fan_pin": 6,
@@ -36,11 +34,10 @@ FAN_LEVELS = [
     },
 ]
 class FanControl:
-    def __init__(self, config, fans=[], logger=None):
-        if logger is None:
-            self.log = logging.getLogger(__name__)
-        else:
-            self.log = logger(__name__)
+    def __init__(self, config, fans=[], get_logger=None):
+        if get_logger is None:
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
 
         self.gpio_fan = Fan()
         self.spc_fan = Fan()
@@ -51,7 +48,7 @@ class FanControl:
             self.gpio_fan = GPIOFan(pin)
             if not self.gpio_fan.is_ready:
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
-        if 'spc_fan' in fans:
+        if 'spc' in fans:
             self.spc_fan = SPCFan()
             if not self.spc_fan.is_ready:
                 self.log.warning("SPC Fan init failed, disable spc_fan control")
@@ -73,24 +70,36 @@ class FanControl:
 
 
     def get_cpu_temperature(self):
-        cmd = 'cat /sys/class/thermal/thermal_zone0/temp'
+        file = '/sys/class/thermal/thermal_zone0/temp'
         try:
-            temp = int(subprocess.check_output(cmd,shell=True).decode())
+            with open(file, 'r') as f:
+                temp = int(f.read())
             return round(temp/1000, 2)
         except Exception as e:
             self.log.error(f'get_cpu_temperature error: {e}')
             return 0.0
 
+    def set_fan_power(self, power: int):
+        if self.gpio_fan.is_ready():
+            if power > 0:
+                self.gpio_fan.on()
+            else:
+                self.gpio_fan.off()
+        if self.spc_fan.is_ready():
+            self.spc_fan.set_power(power)
+        if self.pwm_fan.is_ready():
+            self.pwm_fan.set_state(power)
+
     def run(self):
-        if self.pwm_fan.is_ready and self.pwm_fan.is_supported():
+        if self.pwm_fan.is_ready() and self.pwm_fan.is_supported():
             if self.initial:
                 self.log.info("PWM Fan is supported, sync all other fan with pwm fan")
                 self.initial = False
             # Sync all other fan with pwm fan
             pwm_fan_speed = self.pwm_fan.get_speed()
-            if self.spc_fan.is_ready:
+            if self.spc_fan.is_ready():
                 self.spc_fan.set_power(pwm_fan_speed)
-            if self.gpio_fan.is_ready:
+            if self.gpio_fan.is_ready():
                 if pwm_fan_speed > 0:
                     self.gpio_fan.on()
                 else:
@@ -98,6 +107,7 @@ class FanControl:
                 return
         
         temperature = self.get_cpu_temperature()
+        self.log.debug(f"cpu temperature: {temperature} \"C")
         changed = False
         direction = ""
         if temperature < FAN_LEVELS[self.level]["low"]:
@@ -112,55 +122,53 @@ class FanControl:
         if changed or self.initial:
             self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
             power = FAN_LEVELS[self.level]['percent']
-            if self.gpio_fan.is_ready:
+            if self.gpio_fan.is_ready():
                 if self.level > 1:
                     self.gpio_fan.on()
                 else:
                     self.gpio_fan.off()
-            if self.spc_fan.is_ready:
+            if self.spc_fan.is_ready():
                 self.spc_fan.set_power(power)
-            if self.pwm_fan.is_ready:
+            if self.pwm_fan.is_ready():
                 self.pwm_fan.set_state(self.level)
             
             if self.initial:
-                self.log.info(f"cpu temperature: {temperature} \"C", level="INFO")
+                self.log.info(f"cpu temperature: {temperature} \"C")
             else:
                 self.log.info(
-                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}", level="INFO")
+                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
     
-            self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}", level="INFO")
-            self.log.info(f"set fan power: {power}", level="INFO")
+            self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
+            self.log.info(f"set fan power: {power}")
             self.initial = False
+            self.set_fan_power(power)
+
 
     def off(self):
-        if self.gpio_fan.is_ready:
+        if self.gpio_fan.is_ready():
             self.gpio_fan.off()
-        if self.spc_fan.is_ready:
+        if self.spc_fan.is_ready():
             self.spc_fan.off()
-        if self.pwm_fan.is_ready:
+        if self.pwm_fan.is_ready():
             self.pwm_fan.off()
 
     def close(self):
-        if self.gpio_fan.is_ready:
+        if self.gpio_fan.is_ready():
             self.gpio_fan.close()
-        if self.spc_fan.is_ready:
+        if self.spc_fan.is_ready():
             self.spc_fan.close()
-        if self.pwm_fan.is_ready:
+        if self.pwm_fan.is_ready():
             self.pwm_fan.close()
 
-class Fan:
-    def __init__(self, *args, get_logger=None, **kwargs):
-        if get_logger is None:
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
-
-        self.is_ready = False
+class Fan(BasicClass):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
     # Decorator to check if the fan is ready
     @staticmethod
     def check_ready(func):
         def wrapper(self, *args, **kwargs):
-            if not self.is_ready:
+            if not self.is_ready():
                 self.log.warning(f"{self.__class__.__name__} is not ready")
                 return
             return func(self, *args, **kwargs)
@@ -168,15 +176,17 @@ class Fan:
 
 class GPIOFan(Fan):
     def __init__(self, pin, *args, **kwargs):
+        import gpiozero
         super().__init__(*args, **kwargs)
         self.pin = pin
         self.fan = gpiozero.DigitalOutputDevice(pin)
-        self.is_ready = True
+        self._is_ready = True
 
     def change_pin(self, pin):
         self.fan.close()
         self.pin = pin
         try:
+            import gpiozero
             self.fan = gpiozero.DigitalOutputDevice(pin)
             self.is_ready = True
         except Exception as e:
@@ -194,7 +204,7 @@ class GPIOFan(Fan):
     @Fan.check_ready
     def close(self):
         self.off()
-        self.is_ready = False
+        self._is_ready = False
         self.fan.close()
 
 class SPCFan(Fan):
@@ -203,15 +213,11 @@ class SPCFan(Fan):
     SET_FAN_SPEED = 0x00
 
     def __init__(self, *args, **kwargs):
+        from spc.spc import SPC
         super().__init__(*args, **kwargs)
-        addressed = I2C.scan()
-        if self.I2C_ADDRESS not in addressed:
-            self.is_ready = False
-            return
-        self.i2c = I2C(self.I2C_ADDRESS)
-
-        self.power = 100
-        self.is_ready = True
+        self.spc = SPC()
+        if 'fan' in self.spc.device.peripherals:
+            self._is_ready = self.spc.is_ready()
 
     @Fan.check_ready
     def on(self):
@@ -230,21 +236,17 @@ class SPCFan(Fan):
             raise ValueError("Invalid power")
         
         power = max(0, min(100, power))
-        self.power = power
-
-        self.i2c.write_byte_data(self.SET_FAN_SPEED, power)
-
+        self.spc.set_fan_power(power)
         return power
 
     @Fan.check_ready
     def get_power(self):
-        return self.i2c.read_byte_data(self.GET_FAN_SPEED)
+        return self.spc.get_fan_power()
 
     @Fan.check_ready
     def close(self):
         self.off()
-        self.is_ready = False
-        self.i2c.close()
+        self._is_ready = False
 
 class PWMFan(Fan):
     # Systems that need to replace system pwm fan control
@@ -264,7 +266,7 @@ class PWMFan(Fan):
         if os_id.lower() in self.TEMP_CONTROL_INTERVENE_OS or os_code_name.lower() in self.TEMP_CONTROL_INTERVENE_OS:
             self.log.warning("System do not support pwm fan control")
             self.enable_control = True
-        self.is_ready = True
+        self._is_ready = True
 
     @Fan.check_ready
     def is_supported(self):
@@ -323,4 +325,4 @@ class PWMFan(Fan):
     @Fan.check_ready
     def close(self):
         self.off()
-        self.is_ready = False
+        self._is_ready = False
