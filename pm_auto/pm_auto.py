@@ -94,8 +94,7 @@ class PMAuto(BasicClass):
             self.thread.join()
         self.running = False
         if self.oled is not None and self.oled.is_ready():
-            self.oled.clear()
-            self.oled.display()
+            self.oled.close()
         if self.ws2812 is not None and self.ws2812.is_ready():
             self.ws2812.stop()
         if self.fan is not None:
@@ -193,6 +192,12 @@ class OLEDAuto(BasicClass):
     def run(self):
         data = self.get_data()
         self.handle_oled(data)
+
+    def close(self):
+        if self.oled is not None and self.oled.is_ready():
+            self.oled.clear()
+            self.oled.display()
+            self.oled.off()
 
 class SPCAuto(BasicClass):
     def __init__(self, **kwargs) -> None:
