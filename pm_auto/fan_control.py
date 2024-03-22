@@ -2,7 +2,7 @@ import logging
 import subprocess
 import os
 
-from .utils import run_command, BasicClass
+from .utils import run_command
 
 default_config = {
     "gpio_fan_pin": 6,
@@ -161,9 +161,16 @@ class FanControl:
             self.pwm_fan.close()
         self.log.debug("FanControl closed")
 
-class Fan(BasicClass):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class Fan():
+    def __init__(self, get_logger=None):
+        if get_logger is None:
+            import logging
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+        self._is_ready = False
+
+    def is_ready(self):
+        return self._is_ready
     
     # Decorator to check if the fan is ready
     @staticmethod

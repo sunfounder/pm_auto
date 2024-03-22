@@ -6,7 +6,7 @@ import logging
 import board
 import neopixel_spi as neopixel
 
-from .utils import map_value, BasicClass
+from .utils import map_value
 from math import cos, pi
 
 RGB_STYLES = [
@@ -22,13 +22,17 @@ default_config = {
     'speed': 50,
 }
 
-class WS2812(BasicClass):
+class WS2812():
 
     lights_order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,]
     leap_order = [0, 3, 1, 2, 4, 12, 5, 11, 6, 10, 7, 9, 8, 15, 13, 14]
 
-    def __init__(self, config=default_config, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, config=default_config, get_logger=None):
+        if get_logger is None:
+            import logging
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+        self._is_ready = False
 
         self.led_count = None
         self.color = None
@@ -47,8 +51,10 @@ class WS2812(BasicClass):
         try:
             self.init()
         except Exception as e:
-            self.log.error("Failed to initialize WS2812: \n%s" % e)
+            self.log.error("Failed to initialize WS2812: %s" % e)
 
+    def is_ready(self):
+        return self._is_ready
 
     def init(self):
         spi = board.SPI()

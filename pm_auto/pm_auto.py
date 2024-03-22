@@ -9,7 +9,7 @@ from sf_rpi_status import \
     get_ips, \
     shutdown
 
-from .utils import format_bytes, BasicClass, has_common_items
+from .utils import format_bytes, has_common_items
 
 from .ws2812 import WS2812
 from .fan_control import FanControl, FANS
@@ -27,26 +27,30 @@ DEFAULT_CONFIG = {
     "interval": 1,
 }
 
-class PMAuto(BasicClass):
-    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], **kwargs) -> None:
-        super().__init__(**kwargs)
+class PMAuto():
+    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], get_logger=None):
+        if get_logger is None:
+            import logging
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+        self._is_ready = False
 
         self.oled = None
         self.ws2812 = None
         self.fan = None
         self.spc = None
         if 'oled' in peripherals:
-            self.oled = OLEDAuto(**kwargs)
+            self.oled = OLEDAuto(get_logger=get_logger)
         if 'ws2812' in peripherals:
-            self.ws2812 = WS2812(config, **kwargs)
+            self.ws2812 = WS2812(config, get_logger=get_logger)
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812")
             self.ws2812.start()
         # if FANS in peripherals:
         if has_common_items(FANS, peripherals) or 'spc' in peripherals:
-            self.fan = FanControl(config, fans=peripherals, **kwargs)
+            self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
         if 'spc' in peripherals:
-            self.spc = SPCAuto(**kwargs)
+            self.spc = SPCAuto(get_logger=get_logger)
         self.peripherals = peripherals
 
         self.interval = 1
@@ -56,6 +60,9 @@ class PMAuto(BasicClass):
 
         self.update_config(config)
     
+    def is_ready(self):
+        return self._is_ready
+
     def update_config(self, config):
         if 'temperature_unit' in config:
             if config['temperature_unit'] not in ['C', 'F']:
@@ -102,9 +109,13 @@ class PMAuto(BasicClass):
             self.fan.close()
         self.log.info("PM Auto Stop")
 
-class OLEDAuto(BasicClass):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+class OLEDAuto():
+    def __init__(self, get_logger=None):
+        if get_logger is None:
+            import logging
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+
         from .oled import OLED, Rect
         self.oled = OLED(**kwargs)
         self.Rect = Rect
@@ -118,6 +129,9 @@ class OLEDAuto(BasicClass):
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
         self.temperature_unit = 'C'
+
+    def is_ready(self):
+        return self._is_ready
 
     def get_data(self):
         memory_info = get_memory_info()
@@ -201,11 +215,16 @@ class OLEDAuto(BasicClass):
             self.oled.off()
             self.log.debug("OLED Close")
 
-class SPCAuto(BasicClass):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+class SPCAuto():
+    def __init__(self, get_logger=None):
+        if get_logger is None:
+            import logging
+            get_logger = logging.getLogger
+        self.log = get_logger(__name__)
+        self._is_ready = False
+
         from spc.spc import SPC
-        self.spc = SPC(**kwargs)
+        self.spc = SPC(get_logger=get_logger)
         if not self.spc.is_ready():
             self._is_ready = False
             return
