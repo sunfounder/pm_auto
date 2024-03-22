@@ -46,15 +46,15 @@ class FanControl:
         if 'gpio_fan' in fans:
             pin = config["gpio_fan_pin"]
             self.gpio_fan = GPIOFan(pin)
-            if not self.gpio_fan.is_ready:
+            if not self.gpio_fan.is_ready():
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
         if 'spc' in fans:
             self.spc_fan = SPCFan()
-            if not self.spc_fan.is_ready:
+            if not self.spc_fan.is_ready():
                 self.log.warning("SPC Fan init failed, disable spc_fan control")
         if 'pwm_fan' in fans:
             self.pwm_fan = PWMFan()
-            if not self.pwm_fan.is_ready:
+            if not self.pwm_fan.is_ready():
                 self.log.warning("PWM Fan init failed, disable pwm_fan control")
 
         self.temperature_unit = 'C'
@@ -189,10 +189,10 @@ class GPIOFan(Fan):
         try:
             import gpiozero
             self.fan = gpiozero.DigitalOutputDevice(pin)
-            self.is_ready = True
+            self._is_ready = True
         except Exception as e:
             self.log.error(f"Change pin error: {e}")
-            self.is_ready = False
+            self._is_ready = False
 
     @Fan.check_ready
     def on(self):
