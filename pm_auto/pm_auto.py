@@ -90,8 +90,7 @@ class PMAuto(BasicClass):
         self.log.info("PM Auto Start")
 
     def stop(self):
-        if not self.running:
-            self.log.warning("Already stopped")
+        if self.running:
             self.thread.join()
         self.running = False
         if self.oled is not None and self.oled.is_ready():
