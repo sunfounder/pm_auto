@@ -117,7 +117,7 @@ class OLEDAuto():
         self.log = get_logger(__name__)
 
         from .oled import OLED, Rect
-        self.oled = OLED(**kwargs)
+        self.oled = OLED(get_logger=get_logger)
         self.Rect = Rect
         if not self.oled.is_ready():
             self.log.error("Failed to initialize OLED")
