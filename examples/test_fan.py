@@ -10,7 +10,7 @@ config = {
     'gpio_fan_pin': 6,
 }
 
-fc = FanControl(config, peripherals=peripherals)
+fc = FanControl(config, fans=peripherals)
 
 while True:
     fc.run()

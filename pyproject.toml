@@ -24,7 +24,6 @@ dependencies = [
   'influxdb',
   'pillow',
   'gpiod',
-  'gpiozero',
 ]
 
 [tool.setuptools]

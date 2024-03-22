@@ -159,6 +159,7 @@ class FanControl:
             self.spc_fan.close()
         if self.pwm_fan.is_ready():
             self.pwm_fan.close()
+        self.log.debug("FanControl closed")
 
 class Fan(BasicClass):
     def __init__(self, *args, **kwargs):
@@ -206,6 +207,7 @@ class GPIOFan(Fan):
         self.off()
         self._is_ready = False
         self.fan.close()
+        self.debug("GPIO Fan closed")
 
 class SPCFan(Fan):
     I2C_ADDRESS = 0x5A
@@ -247,6 +249,7 @@ class SPCFan(Fan):
     def close(self):
         self.off()
         self._is_ready = False
+        self.debug("SPC Fan closed")
 
 class PWMFan(Fan):
     # Systems that need to replace system pwm fan control
@@ -326,3 +329,4 @@ class PWMFan(Fan):
     def close(self):
         self.off()
         self._is_ready = False
+        self.debug("PWM Fan closed")

@@ -46,6 +46,8 @@ def format_bytes(size, to_unit=None):
     else:
         return format_bytes_auto(size)
 
+def has_common_items(list1, list2):
+    return bool(set(list1) & set(list2))
 class BasicClass:
     def __init__(self, get_logger=None):
         if get_logger is None:

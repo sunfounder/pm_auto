@@ -9,10 +9,10 @@ from sf_rpi_status import \
     get_ips, \
     shutdown
 
-from .utils import format_bytes, BasicClass
+from .utils import format_bytes, BasicClass, has_common_items
 
 from .ws2812 import WS2812
-from .fan_control import FanControl
+from .fan_control import FanControl, FANS
 
 app_name = 'pm_auto'
 
@@ -42,7 +42,8 @@ class PMAuto(BasicClass):
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812")
             self.ws2812.start()
-        if 'fan' in peripherals or 'spc' in peripherals:
+        # if FANS in peripherals:
+        if has_common_items(FANS, peripherals) or 'spc' in peripherals:
             self.fan = FanControl(config, fans=peripherals, **kwargs)
         if 'spc' in peripherals:
             self.spc = SPCAuto(**kwargs)
@@ -198,6 +199,7 @@ class OLEDAuto(BasicClass):
             self.oled.clear()
             self.oled.display()
             self.oled.off()
+            self.log.debug("OLED Close")
 
 class SPCAuto(BasicClass):
     def __init__(self, **kwargs) -> None:
