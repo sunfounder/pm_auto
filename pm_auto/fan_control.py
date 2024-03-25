@@ -67,7 +67,6 @@ class FanControl:
 
     def set_on_state_changed(self, callback):
         self.__on_state_changed__ = callback
-        self.pwm_fan.set_on_state_changed(callback)
 
     def update_config(self, config):
         if "gpio_fan_pin" in config:
