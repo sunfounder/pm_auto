@@ -63,7 +63,12 @@ class FanControl:
 
         self.level = 0
         self.initial = True
-    
+        self.__on_state_changed__ = None
+
+    def set_on_state_changed(self, callback):
+        self.__on_state_changed__ = callback
+        self.pwm_fan.set_on_state_changed(callback)
+
     def update_config(self, config):
         if "gpio_fan_pin" in config:
             self.gpio_fan.change_pin(config["gpio_fan_pin"])
@@ -142,6 +147,11 @@ class FanControl:
             self.log.info(f"set fan power: {power}")
             self.initial = False
             self.set_fan_power(power)
+            self.__on_state_changed__({
+                "spc_fan_power": power,
+                "gpio_fan_state": self.level > 1,
+                "pwm_fan_state": self.level,
+            })
 
 
     def off(self):

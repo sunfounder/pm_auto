@@ -59,7 +59,12 @@ class PMAuto():
         self.running = False
 
         self.update_config(config)
+        self.__on_state_changed__ = None
     
+    def set_on_state_changed(self, callback):
+        self.__on_state_changed__ = callback
+        self.fan.set_on_state_changed(callback)
+
     def is_ready(self):
         return self._is_ready
 
