@@ -101,56 +101,63 @@ class FanControl:
                 self.initial = False
             # Sync all other fan with pwm fan
             pwm_fan_speed = self.pwm_fan.get_speed()
+            pwm_fan_level = self.pwm_fan.get_state()
             if self.spc_fan.is_ready():
-                self.spc_fan.set_power(pwm_fan_speed)
+                spc_fan_power = FAN_LEVELS[pwm_fan_level]['percent']
+                self.spc_fan.set_power(spc_fan_power)
             if self.gpio_fan.is_ready():
-                if pwm_fan_speed > 0:
+                if pwm_fan_level > 1:
                     self.gpio_fan.on()
                 else:
                     self.gpio_fan.off()
-                return
-        
-        temperature = self.get_cpu_temperature()
-        self.log.debug(f"cpu temperature: {temperature} \"C")
-        changed = False
-        direction = ""
-        if temperature < FAN_LEVELS[self.level]["low"]:
-            self.level -= 1
-            changed = True
-            direction = "low"
-        elif temperature > FAN_LEVELS[self.level]["high"]:
-            self.level += 1
-            changed = True
-            direction = "high"
-        
-        if changed or self.initial:
-            self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
-            power = FAN_LEVELS[self.level]['percent']
-            if self.gpio_fan.is_ready():
-                if self.level > 1:
-                    self.gpio_fan.on()
-                else:
-                    self.gpio_fan.off()
-            if self.spc_fan.is_ready():
-                self.spc_fan.set_power(power)
-            if self.pwm_fan.is_ready():
-                self.pwm_fan.set_state(self.level)
-            
-            if self.initial:
-                self.log.info(f"cpu temperature: {temperature} \"C")
-            else:
-                self.log.info(
-                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
-    
-            self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
-            self.log.info(f"set fan power: {power}")
-            self.initial = False
-            self.set_fan_power(power)
             self.__on_state_changed__({
-                "spc_fan_power": power,
-                "gpio_fan_state": self.level > 1,
-                "pwm_fan_state": self.level,
+                "spc_fan_power": spc_fan_power,
+                "gpio_fan_state": pwm_fan_level > 1,
+                "pwm_fan_speed": pwm_fan_speed,
             })
+            return
+        else:
+            temperature = self.get_cpu_temperature()
+            self.log.debug(f"cpu temperature: {temperature} \"C")
+            changed = False
+            direction = ""
+            if temperature < FAN_LEVELS[self.level]["low"]:
+                self.level -= 1
+                changed = True
+                direction = "low"
+            elif temperature > FAN_LEVELS[self.level]["high"]:
+                self.level += 1
+                changed = True
+                direction = "high"
+            
+            if changed or self.initial:
+                self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
+                power = FAN_LEVELS[self.level]['percent']
+                if self.gpio_fan.is_ready():
+                    if self.level > 1:
+                        self.gpio_fan.on()
+                    else:
+                        self.gpio_fan.off()
+                if self.spc_fan.is_ready():
+                    self.spc_fan.set_power(power)
+                if self.pwm_fan.is_ready():
+                    self.pwm_fan.set_state(self.level)
+                
+                if self.initial:
+                    self.log.info(f"cpu temperature: {temperature} \"C")
+                else:
+                    self.log.info(
+                        f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
+        
+                self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
+                self.log.info(f"set fan power: {power}")
+                self.initial = False
+                self.set_fan_power(power)
+                self.__on_state_changed__({
+                    "spc_fan_power": power,
+                    "gpio_fan_state": self.level > 1,
+                    "pwm_fan_speed": self.pwm_fan.get_speed(),
+                })
 
 
     def off(self):
