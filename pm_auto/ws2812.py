@@ -266,7 +266,7 @@ class WS2812():
         delay = map_value(self.speed, 0, 100, 0.1, 0.005)
 
         rainbow_pattern = self.create_rainbow_pattern(16, self.counter)
-        leds = range(self.led_count)
+        leds = list(range(self.led_count))
         if reverse:
             leds.reverse()
         for i in leds:
