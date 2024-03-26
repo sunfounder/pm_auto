@@ -2,7 +2,7 @@ import logging
 import subprocess
 import os
 
-from .utils import run_command
+from .utils import run_command, log_error
 
 default_config = {
     "gpio_fan_pin": 6,
@@ -34,6 +34,7 @@ FAN_LEVELS = [
     },
 ]
 class FanControl:
+    @log_error
     def __init__(self, config, fans=[], get_logger=None):
         if get_logger is None:
             get_logger = logging.getLogger
@@ -66,13 +67,16 @@ class FanControl:
         self.initial = True
         self.__on_state_changed__ = lambda x: None
 
+    @log_error
     def set_on_state_changed(self, callback):
         self.__on_state_changed__ = callback
 
+    @log_error
     def update_config(self, config):
         if "gpio_fan_pin" in config:
             self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
 
+    @log_error
     def get_cpu_temperature(self):
         file = '/sys/class/thermal/thermal_zone0/temp'
         try:
@@ -83,6 +87,7 @@ class FanControl:
             self.log.error(f'get_cpu_temperature error: {e}')
             return 0.0
 
+    @log_error
     def run(self):
         state = {}
         if self.pwm_fan.is_ready() and self.pwm_fan.is_supported():
@@ -141,6 +146,7 @@ class FanControl:
         self.__on_state_changed__(state)
 
 
+    @log_error
     def off(self):
         if self.gpio_fan.is_ready():
             self.gpio_fan.off()
@@ -149,6 +155,7 @@ class FanControl:
         if self.pwm_fan.is_ready():
             self.pwm_fan.off()
 
+    @log_error
     def close(self):
         if self.gpio_fan.is_ready():
             self.gpio_fan.close()
@@ -157,6 +164,14 @@ class FanControl:
         if self.pwm_fan.is_ready():
             self.pwm_fan.close()
         self.log.debug("FanControl closed")
+
+def check_ready(func):
+    def wrapper(self, *args, **kwargs):
+        if not self.is_ready():
+            self.log.warning(f"{self.__class__.__name__} is not ready")
+            return
+        return func(self, *args, **kwargs)
+    return wrapper
 
 class Fan():
     def __init__(self, get_logger=None):
@@ -170,15 +185,6 @@ class Fan():
         return self._is_ready
     
     # Decorator to check if the fan is ready
-    @staticmethod
-    def check_ready(func):
-        def wrapper(self, *args, **kwargs):
-            if not self.is_ready():
-                self.log.warning(f"{self.__class__.__name__} is not ready")
-                return
-            return func(self, *args, **kwargs)
-        return wrapper
-
 class GPIOFan(Fan):
     def __init__(self, pin, *args, **kwargs):
         import gpiozero
@@ -198,19 +204,23 @@ class GPIOFan(Fan):
             self.log.error(f"Change pin error: {e}")
             self._is_ready = False
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def set(self, value: bool):
         self.fan.value = value
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def on(self):
         self.fan.on()
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def off(self):
         self.fan.off()
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def close(self):
         self.off()
         self._is_ready = False
@@ -229,15 +239,18 @@ class SPCFan(Fan):
         if 'fan' in self.spc.device.peripherals:
             self._is_ready = self.spc.is_ready()
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def on(self):
         self.set_power(self.power)
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def off(self):
         self.set_power(0)
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def set_power(self, power: int):
         '''
         power: 0 ~ 100
@@ -249,11 +262,13 @@ class SPCFan(Fan):
         self.spc.set_fan_power(power)
         return power
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def get_power(self):
         return self.spc.get_fan_power()
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def close(self):
         self.off()
         self._is_ready = False
@@ -266,6 +281,7 @@ class PWMFan(Fan):
         'ubuntu',
     ]
 
+    @log_error
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _, os_id = run_command("lsb_release -a |grep ID | awk -F ':' '{print $2}'")
@@ -279,11 +295,13 @@ class PWMFan(Fan):
             self.enable_control = True
         self._is_ready = True
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def is_supported(self):
         return not self.enable_control
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def get_state(self):
         path = '/sys/class/thermal/cooling_device0/cur_state'
         try:
@@ -294,7 +312,8 @@ class PWMFan(Fan):
             self.log.error(f'read pwm fan state error: {e}')
             return 0
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def set_state(self, level: int):
         '''
         level: 0 ~ 3
@@ -310,7 +329,8 @@ class PWMFan(Fan):
 
             return result
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def get_speed(self):
         '''
         path =  '/sys/devices/platform/cooling_fan/hwmon/*/fan1_input'
@@ -328,12 +348,14 @@ class PWMFan(Fan):
             self.log.error(f'read fan1 speed error: {e}')
             return 0
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def off(self):
         if not self.is_supported():
             self.set_state(0)
 
-    @Fan.check_ready
+    @log_error
+    @check_ready
     def close(self):
         self.off()
         self._is_ready = False

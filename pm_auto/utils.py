@@ -2,6 +2,14 @@
 def map_value(x, from_min, from_max, to_min, to_max):
     return (x - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
 
+def log_error(func):
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as e:
+            self.log.error(str(e))
+    return wrapper
+
 def run_command(cmd):
     import subprocess
     p = subprocess.Popen(

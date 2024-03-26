@@ -9,7 +9,7 @@ from sf_rpi_status import \
     get_ips, \
     shutdown
 
-from .utils import format_bytes, has_common_items
+from .utils import format_bytes, has_common_items, log_error
 
 from .ws2812 import WS2812
 from .fan_control import FanControl, FANS
@@ -28,6 +28,7 @@ DEFAULT_CONFIG = {
 }
 
 class PMAuto():
+    @log_error
     def __init__(self, config=DEFAULT_CONFIG, peripherals=[], get_logger=None):
         if get_logger is None:
             import logging
@@ -61,13 +62,16 @@ class PMAuto():
         self.update_config(config)
         self.__on_state_changed__ = None
     
+    @log_error
     def set_on_state_changed(self, callback):
         self.__on_state_changed__ = callback
         self.fan.set_on_state_changed(callback)
 
+    @log_error
     def is_ready(self):
         return self._is_ready
 
+    @log_error
     def update_config(self, config):
         if 'temperature_unit' in config:
             if config['temperature_unit'] not in ['C', 'F']:
@@ -83,6 +87,7 @@ class PMAuto():
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
 
+    @log_error
     def loop(self):
         while self.running:
             if self.oled is not None and self.oled.is_ready():
@@ -93,6 +98,7 @@ class PMAuto():
                 self.spc.run()
             time.sleep(self.interval)
 
+    @log_error
     def start(self):
         if self.running:
             self.log.warning("Already running")
@@ -102,6 +108,8 @@ class PMAuto():
         self.thread.start()
         self.log.info("PM Auto Start")
 
+
+    @log_error
     def stop(self):
         if self.running:
             self.thread.join()
@@ -115,6 +123,7 @@ class PMAuto():
         self.log.info("PM Auto Stop")
 
 class OLEDAuto():
+    @log_error
     def __init__(self, get_logger=None):
         if get_logger is None:
             import logging
@@ -135,9 +144,11 @@ class OLEDAuto():
         self.ip_show_next_interval = 3
         self.temperature_unit = 'C'
 
+    @log_error
     def is_ready(self):
         return self._is_ready
 
+    @log_error
     def get_data(self):
         memory_info = get_memory_info()
         disk_info = get_disk_info()
@@ -156,6 +167,7 @@ class OLEDAuto():
         }
         return data
 
+    @log_error
     def handle_oled(self, data):
         if self.oled is None or not self.oled.is_ready():
             return
@@ -209,10 +221,12 @@ class OLEDAuto():
         # draw the image buffer
         self.oled.display()
 
+    @log_error
     def run(self):
         data = self.get_data()
         self.handle_oled(data)
 
+    @log_error
     def close(self):
         if self.oled is not None and self.oled.is_ready():
             self.oled.clear()
@@ -221,6 +235,7 @@ class OLEDAuto():
             self.log.debug("OLED Close")
 
 class SPCAuto():
+    @log_error
     def __init__(self, get_logger=None):
         if get_logger is None:
             import logging
@@ -238,9 +253,11 @@ class SPCAuto():
         self.shutdown_request = 0
         self.is_plugged_in = False
 
+    @log_error
     def is_ready(self):
         return self._is_ready
 
+    @log_error
     def handle_shutdown(self):
         if self.spc is None or not self.spc.is_ready():
             return
@@ -256,6 +273,7 @@ class SPCAuto():
                 self.log.info('Button shutdown.')
             shutdown()
 
+    @log_error
     def handle_external_input(self):
         if self.spc is None or not self.spc.is_ready():
             return
@@ -280,6 +298,7 @@ class SPCAuto():
                 self.log.info(f"Battery is below {shutdown_pct}, shutdown!", level="INFO")
                 shutdown()
 
+    @log_error
     def run(self):
         self.handle_external_input()
         self.handle_shutdown()
