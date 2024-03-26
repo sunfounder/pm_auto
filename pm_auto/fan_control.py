@@ -42,9 +42,14 @@ class FanControl:
         self.gpio_fan = Fan()
         self.spc_fan = Fan()
         self.pwm_fan = Fan()
+        self.config = default_config
+
+        self.temperature_unit = 'C'
+        self.interval = 1
+        self.update_config(config)
 
         if 'gpio_fan' in fans:
-            pin = config["gpio_fan_pin"]
+            pin = self.config["gpio_fan_pin"]
             self.gpio_fan = GPIOFan(pin)
             if not self.gpio_fan.is_ready():
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
@@ -57,21 +62,16 @@ class FanControl:
             if not self.pwm_fan.is_ready():
                 self.log.warning("PWM Fan init failed, disable pwm_fan control")
 
-        self.temperature_unit = 'C'
-        self.interval = 1
-        self.update_config(config)
-
         self.level = 0
         self.initial = True
-        self.__on_state_changed__ = None
+        self.__on_state_changed__ = lambda x: None
 
     def set_on_state_changed(self, callback):
         self.__on_state_changed__ = callback
 
     def update_config(self, config):
         if "gpio_fan_pin" in config:
-            self.gpio_fan.change_pin(config["gpio_fan_pin"])
-
+            self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
 
     def get_cpu_temperature(self):
         file = '/sys/class/thermal/thermal_zone0/temp'
@@ -83,39 +83,24 @@ class FanControl:
             self.log.error(f'get_cpu_temperature error: {e}')
             return 0.0
 
-    def set_fan_power(self, power: int):
-        if self.gpio_fan.is_ready():
-            if power > 0:
-                self.gpio_fan.on()
-            else:
-                self.gpio_fan.off()
-        if self.spc_fan.is_ready():
-            self.spc_fan.set_power(power)
-        if self.pwm_fan.is_ready():
-            self.pwm_fan.set_state(power)
-
     def run(self):
+        state = {}
         if self.pwm_fan.is_ready() and self.pwm_fan.is_supported():
             if self.initial:
                 self.log.info("PWM Fan is supported, sync all other fan with pwm fan")
                 self.initial = False
             # Sync all other fan with pwm fan
             pwm_fan_speed = self.pwm_fan.get_speed()
+            state["pwm_fan_speed"] = pwm_fan_speed
             pwm_fan_level = self.pwm_fan.get_state()
             if self.spc_fan.is_ready():
                 spc_fan_power = FAN_LEVELS[pwm_fan_level]['percent']
                 self.spc_fan.set_power(spc_fan_power)
+                state["spc_fan_power"] = spc_fan_power
             if self.gpio_fan.is_ready():
-                if pwm_fan_level > 1:
-                    self.gpio_fan.on()
-                else:
-                    self.gpio_fan.off()
-            self.__on_state_changed__({
-                "spc_fan_power": spc_fan_power,
-                "gpio_fan_state": pwm_fan_level > 1,
-                "pwm_fan_speed": pwm_fan_speed,
-            })
-            return
+                gpio_fan_state = pwm_fan_level > 1
+                state["gpio_fan_state"] = gpio_fan_state
+                self.gpio_fan.set(gpio_fan_state)
         else:
             temperature = self.get_cpu_temperature()
             self.log.debug(f"cpu temperature: {temperature} \"C")
@@ -133,31 +118,27 @@ class FanControl:
             if changed or self.initial:
                 self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
                 power = FAN_LEVELS[self.level]['percent']
+
+                self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
+                self.log.info(f"set fan power: {power}")
+                self.initial = False
                 if self.gpio_fan.is_ready():
-                    if self.level > 1:
-                        self.gpio_fan.on()
-                    else:
-                        self.gpio_fan.off()
+                    gpio_fan_state = self.level > 1
+                    state['gpio_fan_state'] = gpio_fan_state
+                    self.gpio_fan.set(gpio_fan_state)
                 if self.spc_fan.is_ready():
                     self.spc_fan.set_power(power)
+                    state['spc_fan_power'] = power
                 if self.pwm_fan.is_ready():
                     self.pwm_fan.set_state(self.level)
-                
+                    state['pwm_fan_speed'] = self.pwm_fan.get_speed()
                 if self.initial:
                     self.log.info(f"cpu temperature: {temperature} \"C")
                 else:
                     self.log.info(
                         f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
         
-                self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
-                self.log.info(f"set fan power: {power}")
-                self.initial = False
-                self.set_fan_power(power)
-                self.__on_state_changed__({
-                    "spc_fan_power": power,
-                    "gpio_fan_state": self.level > 1,
-                    "pwm_fan_speed": self.pwm_fan.get_speed(),
-                })
+        self.__on_state_changed__(state)
 
 
     def off(self):
@@ -216,6 +197,10 @@ class GPIOFan(Fan):
         except Exception as e:
             self.log.error(f"Change pin error: {e}")
             self._is_ready = False
+
+    @Fan.check_ready
+    def set(self, value: bool):
+        self.fan.value = value
 
     @Fan.check_ready
     def on(self):
