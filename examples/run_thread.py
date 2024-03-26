@@ -3,12 +3,15 @@ import time
 import logging
 
 config = {
-    "temperature_unit": "C",
-    'shutdown_battery_percentage': 10,
+    'temperature_unit': 'C',
+    # 'shutdown_battery_percentage': 10,
+    'gpio_fan_pin': 6,
 }
 
 peripherals = [
-    'spc',
+    # 'spc',
+    'gpio_fan',
+    'pwm_fan',
 ]
 
 def get_logger(name):
@@ -22,6 +25,7 @@ def get_logger(name):
     return log
 
 pm_auto = PMAuto(config, peripherals=peripherals, get_logger=get_logger)
+# pm_auto.set_on_state_changed(lambda state: print(state))
 
 def main():
     try:
