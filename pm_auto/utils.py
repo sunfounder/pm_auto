@@ -23,7 +23,7 @@ def format_bytes_auto(size):
     units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
     # 计算合适的单位
     unit = 0
-    while size >= 100 and unit < len(units)-1:
+    while size >= 1024 and unit < len(units)-1:
         size /= 1024
         unit += 1
     # 格式化为带有一位小数的字符串
