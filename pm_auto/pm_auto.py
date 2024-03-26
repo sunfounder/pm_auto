@@ -24,6 +24,7 @@ DEFAULT_CONFIG = {
     'rgb_style': 'rainbow',
     'rgb_speed': 0,
     'temperature_unit': 'C',
+    'gpio_fan_mode': 1,
     "interval": 1,
 }
 
@@ -86,6 +87,8 @@ class PMAuto():
             self.interval = config['interval']
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
+        if 'gpio_fan' in self.peripherals and 'gpio_fan_mode' in config:
+            self.fan.update_config({'gpio_fan_mode': config['gpio_fan_mode']})
 
     @log_error
     def loop(self):
@@ -201,14 +204,15 @@ class OLEDAuto():
         disk_info_rect =    self.Rect(39, 41, 88, 10)
         disk_rect =         self.Rect(39, 53, 88, 10)
 
+        LEFT_AREA_X = 18
         # cpu usage
-        self.oled.draw_text('CPU', 15, 0, align='center')
-        self.oled.draw_pieslice_chart(cpu_usage, 15, 27, 15, 180, 0)
-        self.oled.draw_text(f'{cpu_usage} %', 15, 27, align='center')
+        self.oled.draw_text('CPU', LEFT_AREA_X, 0, align='center')
+        self.oled.draw_pieslice_chart(cpu_usage, LEFT_AREA_X, 27, 15, 180, 0)
+        self.oled.draw_text(f'{cpu_usage} %', LEFT_AREA_X, 27, align='center')
         # cpu temp
         temp = cpu_temp_c if self.temperature_unit == 'C' else cpu_temp_f
-        self.oled.draw_text(f'{temp:.1f}°{self.temperature_unit}', 15, 37, align='center')
-        self.oled.draw_pieslice_chart(cpu_temp_c, 15, 48, 15, 0, 180)
+        self.oled.draw_text(f'{temp:.1f}°{self.temperature_unit}', LEFT_AREA_X, 37, align='center')
+        self.oled.draw_pieslice_chart(cpu_temp_c, LEFT_AREA_X, 48, 15, 0, 180)
         # RAM
         self.oled.draw_text(f'RAM:  {memory_used}/{memory_total} {memory_unit}', *memory_info_rect.coord())
         self.oled.draw_bar_graph_horizontal(memory_percent, *memory_rect.coord(), *memory_rect.size())

@@ -6,10 +6,12 @@ from .utils import run_command, log_error
 
 default_config = {
     "gpio_fan_pin": 6,
+    "gpio_fan_mode": 1,
 }
 
 FANS = ['pwm_fan', 'gpio_fan', 'spc_fan']
-
+# 5个风扇驱动等级，从高到低
+GPIO_FAN_MODES = ['Always On', 'Performance', 'Balanced', 'Quiet', 'OFF']
 FAN_LEVELS = [
     {
         "name": "OFF",
@@ -75,6 +77,8 @@ class FanControl:
     def update_config(self, config):
         if "gpio_fan_pin" in config:
             self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
+        if "gpio_fan_mode" in config:
+            self.config["gpio_fan_mode"] = config["gpio_fan_mode"]
 
     @log_error
     def get_cpu_temperature(self):
@@ -103,7 +107,7 @@ class FanControl:
                 self.spc_fan.set_power(spc_fan_power)
                 state["spc_fan_power"] = spc_fan_power
             if self.gpio_fan.is_ready():
-                gpio_fan_state = pwm_fan_level > 1
+                gpio_fan_state = pwm_fan_level >= self.config['gpio_fan_mode']
                 state["gpio_fan_state"] = gpio_fan_state
                 self.gpio_fan.set(gpio_fan_state)
         else:
@@ -128,7 +132,7 @@ class FanControl:
                 self.log.info(f"set fan power: {power}")
                 self.initial = False
                 if self.gpio_fan.is_ready():
-                    gpio_fan_state = self.level > 1
+                    gpio_fan_state = self.level >= self.config['gpio_fan_mode']
                     state['gpio_fan_state'] = gpio_fan_state
                     self.gpio_fan.set(gpio_fan_state)
                 if self.spc_fan.is_ready():

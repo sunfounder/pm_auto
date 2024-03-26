@@ -3,7 +3,7 @@ import time
 import logging
 
 config = {
-    'temperature_unit': 'C',
+    'temperature_unit': 'F',
     # 'shutdown_battery_percentage': 10,
     'gpio_fan_pin': 6,
 }
@@ -12,6 +12,7 @@ peripherals = [
     # 'spc',
     'gpio_fan',
     'pwm_fan',
+    'oled',
 ]
 
 def get_logger(name):
