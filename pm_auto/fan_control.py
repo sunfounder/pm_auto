@@ -11,7 +11,7 @@ default_config = {
 
 FANS = ['pwm_fan', 'gpio_fan', 'spc_fan']
 # 5个风扇驱动等级，从高到低
-GPIO_FAN_MODES = ['Always On', 'Performance', 'Balanced', 'Quiet', 'OFF']
+GPIO_FAN_MODES = ['Always On', 'Performance', 'Cool', 'Balanced', 'Quiet']
 FAN_LEVELS = [
     {
         "name": "OFF",
