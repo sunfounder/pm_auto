@@ -14,12 +14,12 @@ RGB_STYLES = [
 ]
 
 default_config = {
-    'led_count': 4,
-    'enable': True,
-    'color': '#00ffff',
-    'brightness': 100,  # 0-100
-    'style': 'breath',
-    'speed': 50,
+    'rgb_led_count': 4,
+    'rgb_enable': True,
+    'rgb_color': '#00ffff',
+    'rgb_brightness': 100,  # 0-100
+    'rgb_style': 'breath',
+    'rgb_speed': 50,
 }
 
 class WS2812():
@@ -91,31 +91,37 @@ class WS2812():
                 self.log.error("Invalid rgb_led_count")
                 return
             self.led_count = config['rgb_led_count']
+            self.log.debug(f"Update LED count: {self.led_count}")
         if 'rgb_enable' in config:
             if not isinstance(config['rgb_enable'], bool):
                 self.log.error("Invalid rgb_enable")
                 return
             self.enable = config['rgb_enable']
+            self.log.debug(f"Update RGB enable: {self.enable}")
         if 'rgb_color' in config:
             if not isinstance(config['rgb_color'], str):
                 self.log.error("Invalid rgb_color")
                 return
             self.color = self.hex_to_rgb(config['rgb_color'])
+            self.log.debug(f"Update RGB color: {self.color}")
         if 'rgb_brightness' in config:
             if not isinstance(config['rgb_brightness'], int):
                 self.log.error("Invalid rgb_brightness")
                 return
             self.brightness = config['rgb_brightness']
+            self.log.debug(f"Update RGB brightness: {self.brightness}")
         if 'rgb_speed' in config:
             if not isinstance(config['rgb_speed'], int):
                 self.log.error("Invalid rgb_speed")
                 return
             self.speed = config['rgb_speed']
+            self.log.debug(f"Update RGB speed: {self.speed}")
         if 'rgb_style' in config:
             if not isinstance(config['rgb_style'], str) or config['rgb_style'] not in RGB_STYLES:
                 self.log.error("Invalid rgb_style")
                 return
             self.style = config['rgb_style']
+            self.log.debug(f"Update RGB style: {self.style}")
 
     # str or hex, eg: 'ffffff', '#ffffff', '#FFFFFF'
     def hex_to_rgb(self, hex):
