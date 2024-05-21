@@ -42,12 +42,19 @@ class PMAuto():
         self.fan = None
         self.spc = None
         if 'oled' in peripherals:
+            self.log.debug("Initializing OLED")
             self.oled = OLEDAuto(get_logger=get_logger)
+            if not self.oled.is_ready():
+                self.log.error("Failed to initialize OLED")
+            else:
+                self.log.debug("OLED initialized")            
         if 'ws2812' in peripherals:
             self.ws2812 = WS2812(config, get_logger=get_logger)
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812")
-            self.ws2812.start()
+            else:
+                self.log.debug("WS2812 initialized")
+                self.ws2812.start()
         # if FANS in peripherals:
         if has_common_items(FANS, peripherals) or 'spc' in peripherals:
             self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
