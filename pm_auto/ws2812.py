@@ -4,7 +4,6 @@ import threading
 # https://github.com/adafruit/Adafruit_CircuitPython_NeoPixel_SPI
 import board
 import neopixel_spi as neopixel
-from adafruit_extended_bus import ExtendedSPI as SPI
 
 from .utils import map_value
 from math import cos, pi
@@ -56,25 +55,8 @@ class WS2812():
     def is_ready(self):
         return self._is_ready
 
-    def get_avaiable_spi_ports(self):
-        import os
-        ports = []
-        for spi in os.listdir('/dev/'):
-            if spi.startswith('spidev'):
-                spi = spi.replace('spidev', '')
-                bus = int(spi.split('.')[0])
-                device = int(spi.split('.')[1])
-                ports.append((bus, device))
-        return ports
-
     def init(self):
-        ports = self.get_avaiable_spi_ports()
-        if len(ports) == 0:
-            self.log.error("No available SPI ports")
-            return
-        bus, device = ports[0]
-        self.log.debug(f"Using SPI{bus}.{device}")
-        spi = SPI(bus, device)
+        spi = board.SPI()
         PIXEL_ORDER = neopixel.GRB
 
         self.strip = neopixel.NeoPixel_SPI(
