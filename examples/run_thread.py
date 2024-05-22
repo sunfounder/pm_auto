@@ -6,6 +6,8 @@ config = {
     'temperature_unit': 'F',
     # 'shutdown_battery_percentage': 10,
     'gpio_fan_pin': 6,
+    'oled_rotation': 180,
+    'rgb_led_count': 12,
 }
 
 peripherals = [
@@ -20,7 +22,7 @@ def get_logger(name):
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)
     console_handler.setFormatter(formatter)
     log.addHandler(console_handler)
     return log

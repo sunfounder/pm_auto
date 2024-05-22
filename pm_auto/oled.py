@@ -258,9 +258,6 @@ class OLED():
 
     def set_rotation(self, rotation):
         self.rotation = rotation
-        self.image = self.image.rotate(rotation)
-        self.oled.clear()
-        self.oled.display()
 
     def is_ready(self):
         return self._is_ready
@@ -282,7 +279,6 @@ class OLED():
         self.oled.on()
 
         self.image = Image.new('1', (self.width, self.height))
-        self.image = self.image.rotate(self.rotation)
         self.draw = ImageDraw.Draw(self.image)
         font_path = resource_filename(__package_name__, 'fonts/Minecraftia-Regular.ttf')
         self.font_8 = ImageFont.truetype(font_path, 8)
@@ -323,7 +319,8 @@ class OLED():
         self.draw.pieslice((x-r, y-r, x+r, y+r), start=start, end=value_end, fill=1, outline=1)
 
     def display(self):
-        self.oled.image(self.image)
+        image = self.image.rotate(self.rotation)
+        self.oled.image(image)
         self.oled.display()
 
     def off(self):
