@@ -19,7 +19,6 @@ dynamic = ["version"]
 
 dependencies = [
   'adafruit-circuitpython-neopixel-spi',
-  'adafruit_extended_bus',
   'smbus2',
   'psutil',
   'influxdb',
