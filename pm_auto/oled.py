@@ -238,12 +238,8 @@ class Rect:
     def rect(self, pecent=100):
         return (self.x, self.y, self.x + int(self.width*pecent/100.0), self.y2)
 
-DEFAULT_CONFIG = {
-    'oled_rotation': 0,
-}
-
 class OLED():
-    def __init__(self, config=DEFAULT_CONFIG, get_logger=None):
+    def __init__(self, get_logger=None):
         if get_logger is None:
             import logging
             get_logger = logging.getLogger
@@ -251,7 +247,6 @@ class OLED():
 
         self._is_ready = False
         self.oled = None
-        self.update_config(config)
         self.rotation = 0
         addresses = self.check_oled()
         if len(addresses) == 0:
@@ -261,13 +256,11 @@ class OLED():
             self.init()
             self._is_ready = True
 
-    def update_config(self, config):
-        if 'oled_rotation' in config:
-            if not isinstance(config['oled_rotation'], int):
-                self.log.error("Invalid oled_rotation")
-                return
-            self.rotation = config['oled_rotation']
-            self.log.debug(f"Update OLED rotation: {self.rotation}")
+    def set_rotation(self, rotation):
+        self.rotation = rotation
+        self.image = self.image.rotate(rotation)
+        self.oled.clear()
+        self.oled.display()
 
     def is_ready(self):
         return self._is_ready

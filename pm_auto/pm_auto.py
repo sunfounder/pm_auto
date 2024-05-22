@@ -88,6 +88,9 @@ class PMAuto():
                 return
             if self.oled is not None:
                 self.oled.temperature_unit = config['temperature_unit']
+        if 'oled_rotation' in config:
+            if self.oled is not None:
+                self.oled.set_rotation(config['oled_rotation'])
         if 'interval' in config:
             if not isinstance(config['interval'], (int, float)):
                 self.log.error("Invalid interval")
@@ -137,14 +140,14 @@ class PMAuto():
 
 class OLEDAuto():
     @log_error
-    def __init__(self, get_logger=None):
+    def __init__(self, config, get_logger=None):
         if get_logger is None:
             import logging
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
 
         from .oled import OLED, Rect
-        self.oled = OLED(get_logger=get_logger)
+        self.oled = OLED(config, get_logger=get_logger)
         self.Rect = Rect
         if not self.oled.is_ready():
             self.log.error("Failed to initialize OLED")
@@ -156,6 +159,9 @@ class OLEDAuto():
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
         self.temperature_unit = 'C'
+
+    def set_rotation(self, rotation):
+        self.oled.set_rotation(rotation)
 
     @log_error
     def is_ready(self):
