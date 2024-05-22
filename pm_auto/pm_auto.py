@@ -100,8 +100,6 @@ class PMAuto():
             self.ws2812.update_config(config)
         if 'gpio_fan' in self.peripherals:
             self.fan.update_config(config)
-        if 'oled' in self.peripherals:
-            self.oled.update_config(config)
 
     @log_error
     def loop(self):
@@ -147,7 +145,7 @@ class OLEDAuto():
         self.log = get_logger(__name__)
 
         from .oled import OLED, Rect
-        self.oled = OLED(config, get_logger=get_logger)
+        self.oled = OLED(get_logger=get_logger)
         self.Rect = Rect
         if not self.oled.is_ready():
             self.log.error("Failed to initialize OLED")
@@ -158,7 +156,9 @@ class OLEDAuto():
         self.ip_index = 0
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
-        self.temperature_unit = 'C'
+        self.temperature_unit = config['temperature_unit']
+        if 'oled_rotation' in config:
+            self.set_rotation(config['oled_rotation'])
 
     def set_rotation(self, rotation):
         self.oled.set_rotation(rotation)
