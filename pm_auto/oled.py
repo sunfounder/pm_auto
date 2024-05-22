@@ -238,8 +238,12 @@ class Rect:
     def rect(self, pecent=100):
         return (self.x, self.y, self.x + int(self.width*pecent/100.0), self.y2)
 
+DEFAULT_CONFIG = {
+    'oled_rotation': 0,
+}
+
 class OLED():
-    def __init__(self, get_logger=None):
+    def __init__(self, config=DEFAULT_CONFIG, get_logger=None):
         if get_logger is None:
             import logging
             get_logger = logging.getLogger
@@ -247,6 +251,8 @@ class OLED():
 
         self._is_ready = False
         self.oled = None
+        self.update_config(config)
+        self.rotation = 0
         addresses = self.check_oled()
         if len(addresses) == 0:
             self.log.warning("No OLED found")
@@ -254,6 +260,14 @@ class OLED():
             self.oled = SSD1306_128_64(i2c_address=addresses[0])
             self.init()
             self._is_ready = True
+
+    def update_config(self, config):
+        if 'oled_rotation' in config:
+            if not isinstance(config['oled_rotation'], int):
+                self.log.error("Invalid oled_rotation")
+                return
+            self.rotation = config['oled_rotation']
+            self.log.debug(f"Update OLED rotation: {self.rotation}")
 
     def is_ready(self):
         return self._is_ready
@@ -275,8 +289,8 @@ class OLED():
         self.oled.on()
 
         self.image = Image.new('1', (self.width, self.height))
+        self.image = self.image.rotate(self.rotation)
         self.draw = ImageDraw.Draw(self.image)
-        # font_path ='/home/pi/pm_auto/fonts/Minecraftia-Regular.ttf'
         font_path = resource_filename(__package_name__, 'fonts/Minecraftia-Regular.ttf')
         self.font_8 = ImageFont.truetype(font_path, 8)
         self.font_12 = ImageFont.truetype(font_path, 12)

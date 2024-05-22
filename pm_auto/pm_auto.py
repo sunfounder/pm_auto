@@ -23,6 +23,7 @@ DEFAULT_CONFIG = {
     'rgb_brightness': 100,
     'rgb_style': 'rainbow',
     'rgb_speed': 0,
+    'oled_rotation': 0,
     'temperature_unit': 'C',
     'gpio_fan_mode': 1,
     "interval": 1,
@@ -43,7 +44,7 @@ class PMAuto():
         self.spc = None
         if 'oled' in peripherals:
             self.log.debug("Initializing OLED")
-            self.oled = OLEDAuto(get_logger=get_logger)
+            self.oled = OLEDAuto(config, get_logger=get_logger)
             if not self.oled.is_ready():
                 self.log.error("Failed to initialize OLED")
             else:
@@ -94,8 +95,10 @@ class PMAuto():
             self.interval = config['interval']
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
-        if 'gpio_fan' in self.peripherals and 'gpio_fan_mode' in config:
-            self.fan.update_config({'gpio_fan_mode': config['gpio_fan_mode']})
+        if 'gpio_fan' in self.peripherals:
+            self.fan.update_config(config)
+        if 'oled' in self.peripherals:
+            self.oled.update_config(config)
 
     @log_error
     def loop(self):
