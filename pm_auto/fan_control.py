@@ -191,11 +191,15 @@ class Fan():
     # Decorator to check if the fan is ready
 class GPIOFan(Fan):
     def __init__(self, pin, *args, **kwargs):
-        import gpiozero
         super().__init__(*args, **kwargs)
-        self.pin = pin
-        self.fan = gpiozero.DigitalOutputDevice(pin)
-        self._is_ready = True
+        try:
+            import gpiozero
+            self.pin = pin
+            self.fan = gpiozero.DigitalOutputDevice(pin)
+            self._is_ready = True
+        except Exception as e:
+            self.log.error(f"GPIO Fan init error: {e}")
+            self._is_ready = False
 
     def change_pin(self, pin):
         self.fan.close()
