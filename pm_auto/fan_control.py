@@ -282,7 +282,7 @@ class PWMFan(Fan):
     # Systems that need to replace system pwm fan control
     # Please use all lowercase
     TEMP_CONTROL_INTERVENE_OS = [
-        'ubuntu',
+        
     ]
 
     @log_error
