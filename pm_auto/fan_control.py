@@ -42,6 +42,7 @@ class FanControl:
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
 
+        self.log.debug("FanControl init")
         self.gpio_fan = Fan()
         self.spc_fan = Fan()
         self.pwm_fan = Fan()
@@ -53,14 +54,17 @@ class FanControl:
 
         if 'gpio_fan' in fans:
             pin = self.config["gpio_fan_pin"]
+            self.log.debug(f"Init GPIO Fan with pin: {pin}")
             self.gpio_fan = GPIOFan(pin)
             if not self.gpio_fan.is_ready():
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
         if 'spc' in fans:
+            self.log.debug("Init SPC Fan")
             self.spc_fan = SPCFan()
             if not self.spc_fan.is_ready():
                 self.log.warning("SPC Fan init failed, disable spc_fan control")
         if 'pwm_fan' in fans:
+            self.log.debug("Init PWM Fan")
             self.pwm_fan = PWMFan()
             if not self.pwm_fan.is_ready():
                 self.log.warning("PWM Fan init failed, disable pwm_fan control")
