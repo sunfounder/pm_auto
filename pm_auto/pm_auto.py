@@ -11,7 +11,6 @@ from sf_rpi_status import \
 
 from .utils import format_bytes, has_common_items, log_error
 
-from .ws2812 import WS2812
 from .fan_control import FanControl, FANS
 
 app_name = 'pm_auto'
@@ -50,6 +49,7 @@ class PMAuto():
             else:
                 self.log.debug("OLED initialized")            
         if 'ws2812' in peripherals:
+            from .ws2812 import WS2812  
             self.ws2812 = WS2812(config, get_logger=get_logger)
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812")
@@ -143,11 +143,11 @@ class OLEDAuto():
             import logging
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
+        self._is_ready = False
 
         from .oled import OLED, Rect
         self.oled = OLED(get_logger=get_logger)
         self.Rect = Rect
-        self._is_ready = False
         if not self.oled.is_ready():
             self.log.error("Failed to initialize OLED")
             return
