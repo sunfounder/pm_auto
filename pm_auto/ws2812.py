@@ -249,7 +249,7 @@ class WS2812():
         time.sleep(delay)
 
     def flow(self, order = None):
-        self.counter_max = self.led_count - 1
+        self.counter_max = self.led_count
         delay = map_value(self.speed, 0, 100, 0.5, 0.1)
         color = [int(x * self.brightness * 0.01) for x in self.color]
         
