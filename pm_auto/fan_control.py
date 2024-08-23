@@ -9,7 +9,14 @@ default_config = {
     "gpio_fan_mode": 1,
 }
 
-FANS = ['pwm_fan', 'gpio_fan', 'spc_fan']
+FANS = [
+    'pwm_fan', # Deprecated
+    'gpio_fan', # Deprecated
+    'spc_fan', # Deprecated
+    'pwm_fan_speed',
+    'gpio_fan_state',
+    'spc_fan_power'
+]
 # 5个风扇驱动等级，从高到低
 GPIO_FAN_MODES = ['Always On', 'Performance', 'Cool', 'Balanced', 'Quiet']
 FAN_LEVELS = [
@@ -52,18 +59,18 @@ class FanControl:
         self.interval = 1
         self.update_config(config)
 
-        if 'gpio_fan' in fans:
+        if 'gpio_fan_state' in fans or 'gpio_fan' in fans: # gpio_fan is deprecated, use gpio_fan_state instead
             pin = self.config["gpio_fan_pin"]
             self.log.debug(f"Init GPIO Fan with pin: {pin}")
             self.gpio_fan = GPIOFan(pin)
             if not self.gpio_fan.is_ready():
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
-        if 'spc' in fans:
+        if 'spc_fan_power' in fans or 'spc_fan' in fans: # spc_fan is deprecated, use spc_fan_power instead
             self.log.debug("Init SPC Fan")
             self.spc_fan = SPCFan()
             if not self.spc_fan.is_ready():
                 self.log.warning("SPC Fan init failed, disable spc_fan control")
-        if 'pwm_fan' in fans:
+        if 'pwm_fan_speed' in fans or 'pwm_fan' in fans: # pwm_fan is deprecated, use pwm_fan_speed instead
             self.log.debug("Init PWM Fan")
             self.pwm_fan = PWMFan()
             if not self.pwm_fan.is_ready():
