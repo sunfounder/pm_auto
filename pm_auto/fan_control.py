@@ -87,8 +87,10 @@ class FanControl:
     @log_error
     def update_config(self, config):
         if "gpio_fan_pin" in config:
+            self.log.debug(f"Update gpio_fan_pin to {config['gpio_fan_pin']}")
             self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
         if "gpio_fan_mode" in config:
+            self.log.debug(f"Update gpio_fan_mode to {config['gpio_fan_mode']}")
             self.config["gpio_fan_mode"] = config["gpio_fan_mode"]
 
     @log_error

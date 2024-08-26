@@ -86,15 +86,18 @@ class PMAuto():
             if config['temperature_unit'] not in ['C', 'F']:
                 self.log.error("Invalid temperature unit")
                 return
+            self.log.info("Temperature unit set to %s", config['temperature_unit'])
             if self.oled is not None:
                 self.oled.temperature_unit = config['temperature_unit']
         if 'oled_rotation' in config:
+            self.log.info("OLED rotation set to %d", config['oled_rotation'])
             if self.oled is not None:
                 self.oled.set_rotation(config['oled_rotation'])
         if 'interval' in config:
             if not isinstance(config['interval'], (int, float)):
                 self.log.error("Invalid interval")
                 return
+            self.log.info("Interval set to %d", config['interval'])
             self.interval = config['interval']
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
