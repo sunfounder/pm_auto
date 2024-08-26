@@ -6,6 +6,7 @@ from sf_rpi_status import \
     get_cpu_percent, \
     get_memory_info, \
     get_disk_info, \
+    get_disks_info, \
     get_ips, \
     shutdown
 
@@ -23,6 +24,8 @@ DEFAULT_CONFIG = {
     'rgb_style': 'rainbow',
     'rgb_speed': 0,
     'oled_rotation': 0,
+    'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
+    'oled_show_ip': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
     'temperature_unit': 'C',
     'gpio_fan_mode': 1,
     "interval": 1,
@@ -158,9 +161,15 @@ class OLEDAuto():
         self.ip_index = 0
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
+        self.oled_disk = 'total'
+        self.oled_show_ip = 'all'
         self.temperature_unit = config['temperature_unit']
         if 'oled_rotation' in config:
             self.set_rotation(config['oled_rotation'])
+        if 'oled_disk' in config:
+            self.oled_disk = config['oled_disk']
+        if 'oled_show_ip' in config:
+            self.oled_show_ip = config['oled_show_ip']
 
     def set_rotation(self, rotation):
         self.oled.set_rotation(rotation)
@@ -172,7 +181,6 @@ class OLEDAuto():
     @log_error
     def get_data(self):
         memory_info = get_memory_info()
-        disk_info = get_disk_info()
         ips = get_ips()
 
         data = {
@@ -181,11 +189,30 @@ class OLEDAuto():
             'memory_total': memory_info.total,
             'memory_used': memory_info.used,
             'memory_percent': memory_info.percent,
-            'disk_total': disk_info.total,
-            'disk_used': disk_info.used,
-            'disk_percent': disk_info.percent,
-            'ips': list(ips.values())
         }
+        # Get disk info
+        disk_info = None
+        if self.oled_disk == 'total':
+            disk_info = get_disk_info()
+        else:
+            disks_info = get_disks_info()
+            if self.oled_disk in disks_info:
+                disk_info = disks_info[self.oled_disk]
+            else:
+                self.log.error(f"Invalid oled_disk: {self.oled_disk}, available disks: {disks_info.keys()}")
+        if disk_info is not None:
+            data['disk_total'] = disk_info.total
+            data['disk_used'] = disk_info.used
+            data['disk_percent'] = disk_info.percent
+        
+        # Get IPs
+        if self.oled_show_ip == 'all':
+            data['ips'] = list(ips.values())
+        elif self.oled_show_ip in ips:
+            data['ips'] = [ips[self.oled_show_ip]]
+        else:
+            self.log.error(f"Invalid oled_show_ip: {self.oled_show_ip}, available ips: {ips.keys()}")
+
         return data
 
     @log_error
