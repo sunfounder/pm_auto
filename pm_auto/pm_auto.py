@@ -99,10 +99,8 @@ class PMAuto():
                 return
             self.log.info("Interval set to %d", config['interval'])
             self.interval = config['interval']
-        if 'ws2812' in self.peripherals:
-            self.ws2812.update_config(config)
-        if 'gpio_fan' in self.peripherals:
-            self.fan.update_config(config)
+        self.ws2812.update_config(config)
+        self.fan.update_config(config)
 
     @log_error
     def loop(self):
