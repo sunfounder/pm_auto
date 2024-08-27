@@ -25,7 +25,7 @@ DEFAULT_CONFIG = {
     'rgb_speed': 0,
     'oled_rotation': 0,
     'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
-    'oled_show_ip': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
+    'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
     'temperature_unit': 'C',
     'gpio_fan_mode': 1,
     "interval": 1,
@@ -162,14 +162,14 @@ class OLEDAuto():
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
         self.oled_disk = 'total'
-        self.oled_show_ip = 'all'
+        self.ip_interface = 'all'
         self.temperature_unit = config['temperature_unit']
         if 'oled_rotation' in config:
             self.set_rotation(config['oled_rotation'])
         if 'oled_disk' in config:
             self.oled_disk = config['oled_disk']
-        if 'oled_show_ip' in config:
-            self.oled_show_ip = config['oled_show_ip']
+        if 'ip_interface' in config:
+            self.ip_interface = config['oled_network_interface']
 
     def set_rotation(self, rotation):
         self.oled.set_rotation(rotation)
@@ -206,12 +206,12 @@ class OLEDAuto():
             data['disk_percent'] = disk_info.percent
         
         # Get IPs
-        if self.oled_show_ip == 'all':
+        if self.ip_interface == 'all':
             data['ips'] = list(ips.values())
-        elif self.oled_show_ip in ips:
-            data['ips'] = [ips[self.oled_show_ip]]
+        elif self.ip_interface in ips:
+            data['ips'] = [ips[self.ip_interface]]
         else:
-            self.log.error(f"Invalid oled_show_ip: {self.oled_show_ip}, available ips: {ips.keys()}")
+            self.log.error(f"Invalid ip_interface: {self.ip_interface}, available ips: {ips.keys()}")
 
         return data
 
