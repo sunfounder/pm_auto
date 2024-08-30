@@ -75,6 +75,18 @@ class PMAuto():
         self.__on_state_changed__ = None
     
     @log_error
+    def set_debug_level(self, level):
+        self.log.setLevel(level)
+        if self.oled is not None:
+            self.oled.set_debug_level(level)
+        if self.ws2812 is not None:
+            self.ws2812.set_debug_level(level)
+        if self.fan is not None:
+            self.fan.set_debug_level(level)
+        if self.spc is not None:
+            self.spc.set_debug_level(level)
+
+    @log_error
     def set_on_state_changed(self, callback):
         self.__on_state_changed__ = callback
         self.fan.set_on_state_changed(callback)
@@ -171,6 +183,11 @@ class OLEDAuto():
         if 'ip_interface' in config:
             self.ip_interface = config['oled_network_interface']
 
+    @log_error
+    def set_debug_level(self, level):
+        self.log.setLevel(level)
+
+    @log_error
     def set_rotation(self, rotation):
         self.oled.set_rotation(rotation)
 

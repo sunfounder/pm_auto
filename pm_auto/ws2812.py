@@ -52,6 +52,9 @@ class WS2812():
         except Exception as e:
             self.log.error("Failed to initialize WS2812: %s" % e)
 
+    def set_debug_level(self, level):
+        self.log.setLevel(level)
+
     def is_ready(self):
         return self._is_ready
 

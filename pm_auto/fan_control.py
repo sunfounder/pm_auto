@@ -80,6 +80,9 @@ class FanControl:
         self.initial = True
         self.__on_state_changed__ = lambda x: None
 
+    def set_debug_level(self, level):
+        self.log.setLevel(level)
+
     @log_error
     def set_on_state_changed(self, callback):
         self.__on_state_changed__ = callback
