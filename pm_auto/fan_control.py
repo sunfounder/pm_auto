@@ -6,6 +6,8 @@ from .utils import run_command, log_error
 
 default_config = {
     "gpio_fan_pin": 6,
+    "gpio_fan_led_pin": 5,
+    "gpio_fan_led": 'follow',
     "gpio_fan_mode": 1,
 }
 
@@ -15,6 +17,7 @@ FANS = [
     'spc_fan', # Deprecated
     'pwm_fan_speed',
     'gpio_fan_state',
+    'gpio_fan_led',
     'spc_fan_power'
 ]
 # 5个风扇驱动等级，从高到低
@@ -61,8 +64,14 @@ class FanControl:
 
         if 'gpio_fan_state' in fans or 'gpio_fan' in fans: # gpio_fan is deprecated, use gpio_fan_state instead
             pin = self.config["gpio_fan_pin"]
-            self.log.debug(f"Init GPIO Fan with pin: {pin}")
-            self.gpio_fan = GPIOFan(pin)
+            if 'gpio_fan_led' in fans:
+                led_pin = self.config["gpio_fan_led_pin"]
+                self.log.debug(f"Init GPIO Fan with pin: {pin}, led_pin: {led_pin}")
+                self.gpio_fan = GPIOFan(pin, led_pin=led_pin)
+                self.gpio_fan.set_led(self.config["gpio_fan_led"])
+            else:
+                self.log.debug(f"Init GPIO Fan with pin: {pin}")
+                self.gpio_fan = GPIOFan(pin)
             if not self.gpio_fan.is_ready():
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
         if 'spc_fan_power' in fans or 'spc_fan' in fans: # spc_fan is deprecated, use spc_fan_power instead
@@ -92,9 +101,16 @@ class FanControl:
         if "gpio_fan_pin" in config:
             self.log.debug(f"Update gpio_fan_pin to {config['gpio_fan_pin']}")
             self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
+            if self.gpio_fan.is_ready():
+                self.gpio_fan.change_pin(config["gpio_fan_pin"])
         if "gpio_fan_mode" in config:
             self.log.debug(f"Update gpio_fan_mode to {config['gpio_fan_mode']}")
             self.config["gpio_fan_mode"] = config["gpio_fan_mode"]
+        if "gpio_fan_led" in config:
+            self.log.debug(f"Update gpio_fan_led to {config['gpio_fan_led']}")
+            self.config["gpio_fan_led"] = config["gpio_fan_led"]
+            if self.gpio_fan.is_ready():
+                self.gpio_fan.set_led(config["gpio_fan_led"])
 
     @log_error
     def get_cpu_temperature(self):
@@ -206,12 +222,17 @@ class Fan():
     
     # Decorator to check if the fan is ready
 class GPIOFan(Fan):
-    def __init__(self, pin, *args, **kwargs):
+    def __init__(self, pin, *args, led_pin=None, **kwargs):
         super().__init__(*args, **kwargs)
         try:
             import gpiozero
             self.pin = pin
             self.fan = gpiozero.DigitalOutputDevice(pin)
+            self.led = None
+            self.led_follow = False
+            if led_pin is not None:
+                self.led = gpiozero.DigitalOutputDevice(led_pin)
+                self.led.value = 0
             self._is_ready = True
         except Exception as e:
             self.log.error(f"GPIO Fan init error: {e}")
@@ -228,20 +249,46 @@ class GPIOFan(Fan):
             self.log.error(f"Change pin error: {e}")
             self._is_ready = False
 
+    def change_led_pin(self, led_pin):
+        self.led.close()
+        self.led_pin = led_pin
+        try:
+            import gpiozero
+            self.led = gpiozero.DigitalOutputDevice(led_pin)
+            self.led.off()
+            self._is_ready = True
+        except Exception as e:
+            self.log.error(f"Change led pin error: {e}")
+            self._is_ready = False
+
     @log_error
     @check_ready
     def set(self, value: bool):
         self.fan.value = value
+        if self.led_follow:
+            self.led.value = value
+
+    @log_error
+    @check_ready
+    def set_led(self, value: str):
+        if value == 'follow':
+            self.led_follow = True
+        elif value == 'on':
+            self.led.value = 1
+        elif value == 'off':
+            self.led.value = 0
+        else:
+            self.log.warning(f"Invalid led value: {value}")
 
     @log_error
     @check_ready
     def on(self):
-        self.fan.on()
+        self.set(True)
 
     @log_error
     @check_ready
     def off(self):
-        self.fan.off()
+        self.set(False)
 
     @log_error
     @check_ready

@@ -207,12 +207,13 @@ class WS2812():
                 time.sleep(1)
                 continue
             try:
-                style_func = getattr(self, self.style)
-                style_func()
+                if self.style in RGB_STYLES:
+                    style_func = getattr(self, self.style)
+                    style_func()
             except KeyError as e:
                 self.log.error(f'Style error: {e}')
-            except Exception as e:
-                self.log.error(f'WS2812 error: {type(e)} {e}')
+            # except Exception as e:
+            #     self.log.error(f'WS2812 error: {type(e)} {e}')
             self.counter += 1
             if self.counter >= self.counter_max:
                 self.counter = 0

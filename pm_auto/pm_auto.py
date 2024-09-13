@@ -23,11 +23,14 @@ DEFAULT_CONFIG = {
     'rgb_brightness': 100,
     'rgb_style': 'rainbow',
     'rgb_speed': 0,
+    'oled_enable': True,
     'oled_rotation': 0,
     'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
     'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
     'temperature_unit': 'C',
     'gpio_fan_mode': 1,
+    'gpio_fan_led_pin': 5,
+    "gpio_fan_pin": 6,
     "interval": 1,
 }
 
@@ -97,25 +100,18 @@ class PMAuto():
 
     @log_error
     def update_config(self, config):
-        if 'temperature_unit' in config:
-            if config['temperature_unit'] not in ['C', 'F']:
-                self.log.error("Invalid temperature unit")
-                return
-            self.log.info("Temperature unit set to %s", config['temperature_unit'])
-            if self.oled is not None:
-                self.oled.temperature_unit = config['temperature_unit']
-        if 'oled_rotation' in config:
-            self.log.info("OLED rotation set to %d", config['oled_rotation'])
-            if self.oled is not None:
-                self.oled.set_rotation(config['oled_rotation'])
         if 'interval' in config:
             if not isinstance(config['interval'], (int, float)):
                 self.log.error("Invalid interval")
                 return
             self.log.info("Interval set to %d", config['interval'])
             self.interval = config['interval']
-        self.ws2812.update_config(config)
-        self.fan.update_config(config)
+        if 'oled' in self.peripherals:
+            self.oled.update_config(config)
+        if 'ws2812' in self.peripherals:
+            self.ws2812.update_config(config)
+        if 'fan' in self.peripherals:
+            self.fan.update_config(config)
 
     @log_error
     def loop(self):
@@ -152,6 +148,14 @@ class PMAuto():
             self.fan.close()
         self.log.info("PM Auto Stop")
 
+OLED_DEFAULT_CONFIG = {
+    'temperature_unit': 'C',
+    'oled_enable': True,
+    'oled_rotation': 0,
+    'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
+    'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
+}
+
 class OLEDAuto():
     @log_error
     def __init__(self, config, get_logger=None):
@@ -173,19 +177,36 @@ class OLEDAuto():
         self.ip_index = 0
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
-        self.oled_disk = 'total'
-        self.ip_interface = 'all'
-        self.temperature_unit = config['temperature_unit']
-        if 'oled_rotation' in config:
-            self.set_rotation(config['oled_rotation'])
-        if 'oled_disk' in config:
-            self.oled_disk = config['oled_disk']
-        if 'ip_interface' in config:
-            self.ip_interface = config['oled_network_interface']
+        self.temperature_unit = OLED_DEFAULT_CONFIG['temperature_unit']
+        self.oled_enable = OLED_DEFAULT_CONFIG['oled_enable']
+        self.oled_disk = OLED_DEFAULT_CONFIG['oled_disk']
+        self.ip_interface = OLED_DEFAULT_CONFIG['oled_network_interface']
+        self.update_config(config)
 
     @log_error
     def set_debug_level(self, level):
         self.log.setLevel(level)
+
+    @log_error
+    def update_config(self, config):
+        if "temperature_unit" in config:
+            if config['temperature_unit'] not in ['C', 'F']:
+                self.log.error("Invalid temperature unit")
+                return
+            self.log.debug(f"Update temperature_unit to {config['temperature_unit']}")
+            self.temperature_unit = config['temperature_unit']
+        if "oled_enable" in config:
+            self.log.debug(f"Update oled_enable to {config['oled_enable']}")
+            self.oled_enable = config['oled_enable']
+        if "oled_rotation" in config:
+            self.log.debug(f"Update oled_rotation to {config['oled_rotation']}")
+            self.set_rotation(config['oled_rotation'])
+        if "oled_disk" in config:
+            self.log.debug(f"Update oled_disk to {config['oled_disk']}")
+            self.oled_disk = config['oled_disk']
+        if "oled_network_interface" in config:
+            self.log.debug(f"Update oled_network_interface to {config['oled_network_interface']}")
+            self.ip_interface = config['ip_interface']
 
     @log_error
     def set_rotation(self, rotation):
@@ -208,19 +229,29 @@ class OLEDAuto():
             'memory_percent': memory_info.percent,
         }
         # Get disk info
-        disk_info = None
+        disks_info = get_disks_info()
+        data['disk_total'] = 0
+        data['disk_used'] = 0
+        data['disk_percent'] = 0
+        data['disk_mounted'] = False
         if self.oled_disk == 'total':
-            disk_info = get_disk_info()
+            for disk in disks_info.values():
+                if disk.mounted:
+                    data['disk_total'] += disk.total
+                    data['disk_used'] += disk.used
+                    data['disk_percent'] += disk.percent
+                    data['disk_mounted'] = True
         else:
-            disks_info = get_disks_info()
-            if self.oled_disk in disks_info:
-                disk_info = disks_info[self.oled_disk]
+            disk = disks_info[self.oled_disk]
+            if disk.mounted:
+                data['disk_total'] = disk.total
+                data['disk_used'] = disk.used
+                data['disk_percent'] = disk.percent
+                data['disk_mounted'] = True
             else:
-                self.log.error(f"Invalid oled_disk: {self.oled_disk}, available disks: {disks_info.keys()}")
-        if disk_info is not None:
-            data['disk_total'] = disk_info.total
-            data['disk_used'] = disk_info.used
-            data['disk_percent'] = disk_info.percent
+                data['disk_total'] = disk.total
+                data['disk_mounted'] = False
+                
         
         # Get IPs
         if self.ip_interface == 'all':
@@ -234,9 +265,6 @@ class OLEDAuto():
 
     @log_error
     def handle_oled(self, data):
-        if self.oled is None or not self.oled.is_ready():
-            return
-        
         # Get system status data
         cpu_temp_c = data['cpu_temperature']
         cpu_temp_f = cpu_temp_c * 9 / 5 + 32
@@ -245,8 +273,12 @@ class OLEDAuto():
         memory_used = format_bytes(data['memory_used'], memory_unit)
         memory_percent = data['memory_percent']
         disk_total, disk_unit = format_bytes(data['disk_total'])
-        disk_used = format_bytes(data['disk_used'], disk_unit)
-        disk_percent = data['disk_percent']
+        if data['disk_mounted']:
+            disk_used = format_bytes(data['disk_used'], disk_unit)
+            disk_percent = data['disk_percent']
+        else:
+            disk_used = 'NA'
+            disk_percent = 0
         ips = data['ips']
         ip = 'DISCONNECTED'
 
@@ -284,11 +316,19 @@ class OLEDAuto():
         # IP
         self.oled.draw.rectangle((ip_rect.x,ip_rect.y,ip_rect.x+ip_rect.width,ip_rect.height), outline=1, fill=1)
         self.oled.draw_text(ip, *ip_rect.topcenter(), fill=0, align='center')
+
         # draw the image buffer
         self.oled.display()
 
     @log_error
     def run(self):
+        if self.oled is None or not self.oled.is_ready() or not self.oled_enable:
+            # Clear draw buffer
+            self.oled.clear()
+            # draw the image buffer
+            self.oled.display()
+            return
+
         data = self.get_data()
         self.handle_oled(data)
 
