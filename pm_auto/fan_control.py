@@ -98,6 +98,7 @@ class FanControl:
 
     @log_error
     def update_config(self, config):
+        self.log.debug(f"FAN update_config: {config}")
         if "gpio_fan_pin" in config:
             self.log.debug(f"Update gpio_fan_pin to {config['gpio_fan_pin']}")
             self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
@@ -111,6 +112,11 @@ class FanControl:
             self.config["gpio_fan_led"] = config["gpio_fan_led"]
             if self.gpio_fan.is_ready():
                 self.gpio_fan.set_led(config["gpio_fan_led"])
+        if "gpio_fan_led_pin" in config:
+            self.log.debug(f"Update gpio_fan_led_pin to {config['gpio_fan_led_pin']}")
+            self.config["gpio_fan_led_pin"] = config["gpio_fan_led_pin"]
+            if self.gpio_fan.is_ready():
+                self.gpio_fan.change_led_pin(config["gpio_fan_led_pin"])
 
     @log_error
     def get_cpu_temperature(self):
@@ -271,14 +277,17 @@ class GPIOFan(Fan):
     @log_error
     @check_ready
     def set_led(self, value: str):
+        self.log.debug(f"Set led to {value}")
         if value == 'follow':
             self.led_follow = True
-        elif value == 'on':
-            self.led.value = 1
-        elif value == 'off':
-            self.led.value = 0
         else:
-            self.log.warning(f"Invalid led value: {value}")
+            self.led_follow = False
+            if value == 'on':
+                self.led.value = 1
+            elif value == 'off':
+                self.led.value = 0
+            else:
+                self.log.warning(f"Invalid led value: {value}")
 
     @log_error
     @check_ready

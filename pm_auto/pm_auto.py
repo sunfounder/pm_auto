@@ -42,6 +42,7 @@ class PMAuto():
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
         self._is_ready = False
+        self.peripherals = peripherals
 
         self.oled = None
         self.ws2812 = None
@@ -63,11 +64,10 @@ class PMAuto():
                 self.log.debug("WS2812 initialized")
                 self.ws2812.start()
         # if FANS in peripherals:
-        if has_common_items(FANS, peripherals) or 'spc' in peripherals:
+        if self.fan_enabled() or 'spc' in peripherals:
             self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
         if 'spc' in peripherals:
             self.spc = SPCAuto(get_logger=get_logger)
-        self.peripherals = peripherals
 
         self.interval = 1
     
@@ -77,6 +77,9 @@ class PMAuto():
         self.update_config(config)
         self.__on_state_changed__ = None
     
+    def fan_enabled(self):
+        return has_common_items(FANS, self.peripherals)
+
     @log_error
     def set_debug_level(self, level):
         self.log.setLevel(level)
@@ -100,6 +103,7 @@ class PMAuto():
 
     @log_error
     def update_config(self, config):
+        self.log.debug(f"Update config: {config}")
         if 'interval' in config:
             if not isinstance(config['interval'], (int, float)):
                 self.log.error("Invalid interval")
@@ -110,7 +114,7 @@ class PMAuto():
             self.oled.update_config(config)
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
-        if 'fan' in self.peripherals:
+        if self.fan_enabled():
             self.fan.update_config(config)
 
     @log_error
