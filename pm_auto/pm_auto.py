@@ -210,7 +210,7 @@ class OLEDAuto():
             self.oled_disk = config['oled_disk']
         if "oled_network_interface" in config:
             self.log.debug(f"Update oled_network_interface to {config['oled_network_interface']}")
-            self.ip_interface = config['ip_interface']
+            self.ip_interface = config['oled_network_interface']
 
     @log_error
     def set_rotation(self, rotation):
