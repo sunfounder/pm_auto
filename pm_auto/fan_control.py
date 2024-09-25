@@ -67,21 +67,21 @@ class FanControl:
             if 'gpio_fan_led' in fans:
                 led_pin = self.config["gpio_fan_led_pin"]
                 self.log.debug(f"Init GPIO Fan with pin: {pin}, led_pin: {led_pin}")
-                self.gpio_fan = GPIOFan(pin, led_pin=led_pin)
+                self.gpio_fan = GPIOFan(pin, led_pin=led_pin, log=self.log)
                 self.gpio_fan.set_led(self.config["gpio_fan_led"])
             else:
                 self.log.debug(f"Init GPIO Fan with pin: {pin}")
-                self.gpio_fan = GPIOFan(pin)
+                self.gpio_fan = GPIOFan(pin, log=self.log)
             if not self.gpio_fan.is_ready():
                 self.log.warning("GPIO Fan init failed, disable gpio_fan control")
         if 'spc_fan_power' in fans or 'spc_fan' in fans: # spc_fan is deprecated, use spc_fan_power instead
             self.log.debug("Init SPC Fan")
-            self.spc_fan = SPCFan()
+            self.spc_fan = SPCFan(log=self.log)
             if not self.spc_fan.is_ready():
                 self.log.warning("SPC Fan init failed, disable spc_fan control")
         if 'pwm_fan_speed' in fans or 'pwm_fan' in fans: # pwm_fan is deprecated, use pwm_fan_speed instead
             self.log.debug("Init PWM Fan")
-            self.pwm_fan = PWMFan()
+            self.pwm_fan = PWMFan(log=self.log)
             if not self.pwm_fan.is_ready():
                 self.log.warning("PWM Fan init failed, disable pwm_fan control")
 
@@ -187,7 +187,6 @@ class FanControl:
         
         self.__on_state_changed__(state)
 
-
     @log_error
     def off(self):
         if self.gpio_fan.is_ready():
@@ -216,11 +215,8 @@ def check_ready(func):
     return wrapper
 
 class Fan():
-    def __init__(self, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, log=None):
+        self.log = log
         self._is_ready = False
 
     def is_ready(self):

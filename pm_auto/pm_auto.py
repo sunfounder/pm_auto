@@ -74,7 +74,7 @@ class PMAuto():
         self.thread = None
         self.running = False
 
-        self.update_config(config)
+        # self.update_config(config)
         self.__on_state_changed__ = None
     
     def fan_enabled(self):
