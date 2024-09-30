@@ -103,9 +103,8 @@ class WS2812():
             if not isinstance(config['rgb_speed'], int):
                 self.log.error("Invalid rgb_speed")
                 return
-            self.log.debug(f"Update RGB speed: {config['rgb_speed']}")
             self.speed = config['rgb_speed']
-            self.log.debug(f"Update RGB speed: {self.speed}")
+            self.log.debug(f"Update RGB speed: {config['rgb_speed']} AKA {self.speed}")
         if 'rgb_style' in config:
             if not isinstance(config['rgb_style'], str) or config['rgb_style'] not in RGB_STYLES:
                 self.log.error("Invalid rgb_style")
@@ -163,7 +162,6 @@ class WS2812():
         b = int(_B_val * 255)
         return (r, g, b)
 
-
     def clear(self):
         self.strip.fill(0)
 
@@ -207,13 +205,16 @@ class WS2812():
                 time.sleep(1)
                 continue
             try:
+                # self.log.debug(f"WS2812 style: {self.style}")
                 if self.style in RGB_STYLES:
                     style_func = getattr(self, self.style)
                     style_func()
             except KeyError as e:
                 self.log.error(f'Style error: {e}')
-            # except Exception as e:
-            #     self.log.error(f'WS2812 error: {type(e)} {e}')
+                time.sleep(5)
+            except Exception as e:
+                self.log.error(f'WS2812 error: {type(e)} {e}')
+                time.sleep(5)
             self.counter += 1
             if self.counter >= self.counter_max:
                 self.counter = 0
@@ -238,13 +239,17 @@ class WS2812():
 
     # styles
     def solid(self):
+        # self.log.debug(f"WS2812 Solid, color: {self.color}, brightness: {self.brightness}")
         color = [int(x * self.brightness * 0.01) for x in self.color]
         self.strip.fill(color)
         self.strip.show()
         time.sleep(1)
 
     def breathing(self):
+        # self.log.debug(f"WS2812 Breathing, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = 200
+        if self.counter >= self.counter_max:
+            self.counter = 0
         delay = map_value(self.speed, 0, 100, 0.1, 0.001)
         color = [int(x * self.brightness * 0.01) for x in self.color]
 
@@ -259,7 +264,10 @@ class WS2812():
         time.sleep(delay)
 
     def flow(self, order = None):
+        # self.log.debug(f"WS2812 Flow, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = self.led_count
+        if self.counter >= self.counter_max:
+            self.counter = 0
         delay = map_value(self.speed, 0, 100, 0.5, 0.1)
         color = [int(x * self.brightness * 0.01) for x in self.color]
         
@@ -277,7 +285,10 @@ class WS2812():
         self.flow(order)
 
     def rainbow(self, reverse=False):
+        # self.log.debug(f"WS2812 Rainbow, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = 360
+        if self.counter >= self.counter_max:
+            self.counter = 0
         delay = map_value(self.speed, 0, 100, 0.1, 0.005)
 
         rainbow_pattern = self.create_rainbow_pattern(16, self.counter)
@@ -296,7 +307,10 @@ class WS2812():
         self.rainbow(reverse=True)
 
     def hue_cycle(self):
+        # self.log.debug(f"WS2812 Hue Cycle, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = 360
+        if self.counter >= self.counter_max:
+            self.counter = 0
         delay = map_value(self.speed, 0, 100, 0.1, 0.005)
         hue = self.counter
         color = self.hsl_to_rgb(hue, 1, self.brightness * 0.01)
