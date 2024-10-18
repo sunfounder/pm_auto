@@ -262,8 +262,9 @@ class OLEDAuto():
             data['ips'] = list(ips.values())
         elif self.ip_interface in ips:
             data['ips'] = [ips[self.ip_interface]]
+            self.ip_index = 0
         else:
-            self.log.error(f"Invalid ip_interface: {self.ip_interface}, available ips: {ips.keys()}")
+            self.log.error(f"Invalid interface: {self.ip_interface}, available interfaces: {ips.keys()}")
 
         return data
 
