@@ -226,6 +226,10 @@ class Fan():
 class GPIOFan(Fan):
     def __init__(self, pin, *args, led_pin=None, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # This is to fix the gpiozero 2.0.1 not working on Pi 5. Try remove this patch on future releases. TODO
+        if not os.path.exists('/dev/gpiochip4'):
+            os.symlink('/dev/gpiochip0', '/dev/gpiochip4')
         try:
             import gpiozero
             self.pin = pin
