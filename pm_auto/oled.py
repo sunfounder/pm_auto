@@ -321,6 +321,8 @@ class OLED():
     def display(self):
         image = self.image.rotate(self.rotation)
         self.oled.image(image)
+        # save image to file for debug
+        # image.save('/tmp/oled.png')
         self.oled.display()
 
     def off(self):
