@@ -22,7 +22,7 @@
 
 from __future__ import division
 from PIL import Image, ImageDraw, ImageFont
-from pkg_resources import resource_filename
+from importlib.resources import files as resource_files
 
 from .i2c import I2C
 
@@ -280,7 +280,7 @@ class OLED():
 
         self.image = Image.new('1', (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image)
-        font_path = resource_filename(__package_name__, 'fonts/Minecraftia-Regular.ttf')
+        font_path = resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf')
         self.font_8 = ImageFont.truetype(font_path, 8)
         self.font_12 = ImageFont.truetype(font_path, 12)
 
