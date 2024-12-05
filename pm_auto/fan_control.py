@@ -162,28 +162,29 @@ class FanControl:
                 changed = True
                 direction = "high"
             
-            if changed or self.initial:
-                self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
-                power = FAN_LEVELS[self.level]['percent']
+            self.level = max(0, min(self.level, len(FAN_LEVELS) - 1))
+            power = FAN_LEVELS[self.level]['percent']
 
+            if self.gpio_fan.is_ready():
+                gpio_fan_state = self.level >= self.config['gpio_fan_mode']
+                state['gpio_fan_state'] = gpio_fan_state
+                self.gpio_fan.set(gpio_fan_state)
+            if self.spc_fan.is_ready():
+                self.spc_fan.set_power(power)
+                state['spc_fan_power'] = power
+            if self.pwm_fan.is_ready():
+                self.pwm_fan.set_state(self.level)
+                state['pwm_fan_speed'] = self.pwm_fan.get_speed()
+
+
+            if changed:
                 self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
                 self.log.info(f"set fan power: {power}")
+                self.log.info(
+                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
+            elif self.initial:
+                self.log.info(f"cpu temperature: {temperature} \"C")
                 self.initial = False
-                if self.gpio_fan.is_ready():
-                    gpio_fan_state = self.level >= self.config['gpio_fan_mode']
-                    state['gpio_fan_state'] = gpio_fan_state
-                    self.gpio_fan.set(gpio_fan_state)
-                if self.spc_fan.is_ready():
-                    self.spc_fan.set_power(power)
-                    state['spc_fan_power'] = power
-                if self.pwm_fan.is_ready():
-                    self.pwm_fan.set_state(self.level)
-                    state['pwm_fan_speed'] = self.pwm_fan.get_speed()
-                if self.initial:
-                    self.log.info(f"cpu temperature: {temperature} \"C")
-                else:
-                    self.log.info(
-                        f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
         
         self.__on_state_changed__(state)
 
@@ -364,6 +365,12 @@ class PWMFan(Fan):
     @log_error
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not PWMFan.pwm_fan_supported():
+            self.log.warning("PWM Fan is not supported")
+            self._is_ready = False
+            return
+
+        # Check if system support pwm fan control
         _, os_id = run_command("lsb_release -a |grep ID | awk -F ':' '{print $2}'")
         os_id = os_id.strip()
         _, os_code_name = run_command("lsb_release -a |grep Codename | awk -F ':' '{print $2}'")
@@ -374,6 +381,11 @@ class PWMFan(Fan):
             self.log.warning("System do not support pwm fan control")
             self.enable_control = True
         self._is_ready = True
+
+    @staticmethod
+    def pwm_fan_supported():
+        from os import path
+        return path.exists('/sys/class/thermal/cooling_device0/cur_state') and path.exists('/sys/devices/platform/cooling_fan')
 
     @log_error
     @check_ready

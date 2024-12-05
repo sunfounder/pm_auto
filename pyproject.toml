@@ -22,7 +22,7 @@ dependencies = [
   'smbus2',
   'psutil',
   'influxdb',
-  'pillow',
+  'Pillow',
   'gpiod',
   'gpiozero',
 ]
