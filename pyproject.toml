@@ -25,6 +25,7 @@ dependencies = [
   'Pillow',
   'gpiod',
   'gpiozero',
+  'rpi.lgpio',
 ]
 
 [tool.setuptools]
