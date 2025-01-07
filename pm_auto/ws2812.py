@@ -40,7 +40,6 @@ class WS2812():
         self.style = None
         self.enable = None
         self.brightness = None
-        self.update_config(config)
 
         self.strip = None
         self.running = False
@@ -53,6 +52,7 @@ class WS2812():
         else:
             try:
                 self.init()
+                self.update_config(config)
             except Exception as e:
                 self.log.error("Failed to initialize WS2812: %s" % e)
 
