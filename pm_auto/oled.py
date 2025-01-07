@@ -25,6 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 from importlib.resources import files as resource_files
 
 from .i2c import I2C
+from .utils import run_command
 
 __package_name__ = __name__.split('.')[0]
 
@@ -248,13 +249,17 @@ class OLED():
         self._is_ready = False
         self.oled = None
         self.rotation = 0
-        addresses = self.check_oled()
-        if len(addresses) == 0:
-            self.log.warning("No OLED found")
+        if not I2C.enabled():
+            _, result = run_command("ls /dev/i2c*")
+            self.log.error(f"I2C is not enabled. ls /dev/i2c* returned: \n{result}")
         else:
-            self.oled = SSD1306_128_64(i2c_address=addresses[0])
-            self.init()
-            self._is_ready = True
+            addresses = self.check_oled()
+            if len(addresses) == 0:
+                self.log.error("No OLED found")
+            else:
+                self.oled = SSD1306_128_64(i2c_address=addresses[0])
+                self.init()
+                self._is_ready = True
 
     def set_rotation(self, rotation):
         self.rotation = rotation

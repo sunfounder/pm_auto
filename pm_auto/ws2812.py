@@ -4,6 +4,7 @@ import threading
 # https://github.com/adafruit/Adafruit_CircuitPython_NeoPixel_SPI
 import board
 import neopixel_spi as neopixel
+from os import path
 
 from .utils import map_value
 from math import cos, pi
@@ -47,10 +48,13 @@ class WS2812():
         self.counter = 0
         self.counter_max = 100
 
-        try:
-            self.init()
-        except Exception as e:
-            self.log.error("Failed to initialize WS2812: %s" % e)
+        if not path.exists('/dev/spidev0.0'):
+            self.log.error("SPI not enabled")
+        else:
+            try:
+                self.init()
+            except Exception as e:
+                self.log.error("Failed to initialize WS2812: %s" % e)
 
     def set_debug_level(self, level):
         self.log.setLevel(level)

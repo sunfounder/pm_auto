@@ -36,6 +36,11 @@ class I2C():
             return False
 
     @staticmethod
+    def enabled(bus=1):
+        import os
+        return os.path.exists("/dev/i2c-{}".format(bus))
+
+    @staticmethod
     def scan(busnum=1, force=False):
         devices = []
         for addr in range(0x03, 0x77 + 1):
