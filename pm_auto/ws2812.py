@@ -34,7 +34,7 @@ class WS2812():
         self.log = get_logger(__name__)
         self._is_ready = False
 
-        self.led_count = None
+        self.led_count = 8
         self.color = None
         self.speed = None
         self.style = None
