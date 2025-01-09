@@ -79,28 +79,24 @@ class WS2812():
             if not isinstance(config['rgb_led_count'], int):
                 self.log.error("Invalid rgb_led_count")
                 return
-            self.log.debug(f"Update LED count: {config['rgb_led_count']}")
             self.led_count = config['rgb_led_count']
             self.log.debug(f"Update LED count: {self.led_count}")
         if 'rgb_enable' in config:
             if not isinstance(config['rgb_enable'], bool):
                 self.log.error("Invalid rgb_enable")
                 return
-            self.log.debug(f"Update RGB enable: {config['rgb_enable']}")
             self.enable = config['rgb_enable']
             self.log.debug(f"Update RGB enable: {self.enable}")
         if 'rgb_color' in config:
             if not isinstance(config['rgb_color'], str):
                 self.log.error("Invalid rgb_color")
                 return
-            self.log.debug(f"Update RGB color: {config['rgb_color']}")
             self.color = self.hex_to_rgb(config['rgb_color'])
             self.log.debug(f"Update RGB color: {self.color}")
         if 'rgb_brightness' in config:
             if not isinstance(config['rgb_brightness'], int):
                 self.log.error("Invalid rgb_brightness")
                 return
-            self.log.debug(f"Update RGB brightness: {config['rgb_brightness']}")
             self.brightness = config['rgb_brightness']
             self.log.debug(f"Update RGB brightness: {self.brightness}")
         if 'rgb_speed' in config:
@@ -108,12 +104,11 @@ class WS2812():
                 self.log.error("Invalid rgb_speed")
                 return
             self.speed = config['rgb_speed']
-            self.log.debug(f"Update RGB speed: {config['rgb_speed']} AKA {self.speed}")
+            self.log.debug(f"Update RGB speed: {self.speed}")
         if 'rgb_style' in config:
             if not isinstance(config['rgb_style'], str) or config['rgb_style'] not in RGB_STYLES:
                 self.log.error("Invalid rgb_style")
                 return
-            self.log.debug(f"Update RGB style: {config['rgb_style']}")
             self.style = config['rgb_style']
             self.log.debug(f"Update RGB style: {self.style}")
 
