@@ -14,7 +14,7 @@ Pironman Auto is a tool to control all peripherals on your Pironman.
 # Install development dependencies
 apt-get -y install python3 python3-pip python3-venv git
 # for pillow
-apt-get -y install libfreetype6-dev libjpeg-dev
+apt-get -y install libfreetype6-dev libjpeg-dev libopenjp2-7
 # Create a virtual environment
 python3 -m venv venv
 # Install build
