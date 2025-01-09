@@ -1,11 +1,9 @@
 import time
 import threading
-import logging
 from sf_rpi_status import \
     get_cpu_temperature, \
     get_cpu_percent, \
     get_memory_info, \
-    get_disk_info, \
     get_disks_info, \
     get_ips, \
     shutdown
