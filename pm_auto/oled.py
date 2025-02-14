@@ -36,6 +36,7 @@ class OLED():
         self.disk_mode = OLED_DEFAULT_CONFIG['oled_disk']
         self.ip_interface = OLED_DEFAULT_CONFIG['oled_network_interface']
         self.sleep_timeout = OLED_DEFAULT_CONFIG['oled_sleep_timeout']
+        self.enable = OLED_DEFAULT_CONFIG['oled_enable']
         self.ip_index = 0
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
@@ -69,6 +70,9 @@ class OLED():
         if "oled_sleep_timeout" in config:
             self.log.debug(f"Update oled_sleep_timeout to {config['oled_sleep_timeout']}")
             self.sleep_timeout = config['oled_sleep_timeout']
+        if "oled_enable" in config:
+            self.log.debug(f"Update oled_enable to {config['oled_enable']}")
+            self.enable = config['oled_enable']
 
     @log_error
     def set_rotation(self, rotation):
@@ -197,7 +201,7 @@ class OLED():
 
     @log_error
     def run(self):
-        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False:
+        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False or self.enable == False:
             return
 
         if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout and self.wake_flag == True:
