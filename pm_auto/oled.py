@@ -11,6 +11,7 @@ import time
 
 OLED_DEFAULT_CONFIG = {
     'temperature_unit': 'C',
+    'oled_enable': True,
     'oled_rotation': 0,
     'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
     'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
@@ -44,8 +45,6 @@ class OLED():
         self.wake_start_time = 0
         self.update_config(config)
 
-        self.wake()
-
     @log_error
     def set_debug_level(self, level):
         self.log.setLevel(level)
@@ -72,7 +71,10 @@ class OLED():
             self.sleep_timeout = config['oled_sleep_timeout']
         if "oled_enable" in config:
             self.log.debug(f"Update oled_enable to {config['oled_enable']}")
-            self.enable = config['oled_enable']
+            if config['oled_enable']:
+                self.wake()
+            else:
+                self.sleep()
 
     @log_error
     def set_rotation(self, rotation):
@@ -201,7 +203,7 @@ class OLED():
 
     @log_error
     def run(self):
-        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False or self.enable == False:
+        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False:
             return
 
         if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout and self.wake_flag == True:

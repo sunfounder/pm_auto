@@ -7,7 +7,7 @@ def log_error(func):
         try:
             return func(self, *args, **kwargs)
         except Exception as e:
-            self.log.error(str(e))
+            self.log.exception(str(e))
     return wrapper
 
 def run_command(cmd):

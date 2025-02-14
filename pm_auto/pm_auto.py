@@ -17,7 +17,6 @@ DEFAULT_CONFIG = {
     'rgb_brightness': 100,
     'rgb_style': 'rainbow',
     'rgb_speed': 0,
-    'oled_enable': True,
     'oled_rotation': 0,
     'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
     'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
@@ -27,7 +26,6 @@ DEFAULT_CONFIG = {
     'gpio_fan_mode': 1,
     'gpio_fan_led_pin': 5,
     "gpio_fan_pin": 6,
-    "interval": 1,
     'vibration_switch_pin': 26,
     'vibration_switch_pull_up': False,
 }
@@ -49,7 +47,6 @@ class PMAuto():
         self.vibration_switch = None
         if 'oled' in peripherals:
             self.log.debug("Initializing OLED")
-            self.oled_enable = True
             self.oled = OLED(config, get_logger=get_logger)
             if not self.oled.is_ready():
                 self.log.error("Failed to initialize OLED")
@@ -71,6 +68,7 @@ class PMAuto():
         if 'vibration_switch' in peripherals:
             self.vibration_switch = VibrationSwitch(config, get_logger=get_logger)
             self.vibration_switch.set_on_vabration_detected(self.on_vabration_detected)
+
         self.interval = 1
     
         self.thread = None
@@ -111,12 +109,6 @@ class PMAuto():
     @log_error
     def update_config(self, config):
         self.log.debug(f"Update config: {config}")
-        if 'interval' in config:
-            if not isinstance(config['interval'], (int, float)):
-                self.log.error("Invalid interval")
-                return
-            self.log.info("Interval set to %d", config['interval'])
-            self.interval = config['interval']
         if 'oled' in self.peripherals:
             self.oled.update_config(config)
         if 'ws2812' in self.peripherals:
@@ -125,15 +117,11 @@ class PMAuto():
             self.fan.update_config(config)
         if 'vibration_switch' in self.peripherals:
             self.vibration_switch.update_config(config)
-        if 'oled_enable' in config:
-            self.oled_enable = config['oled_enable']
-            if not self.oled_enable:
-                self.oled.clear()
 
     @log_error
     def loop(self):
         while self.running:
-            if self.oled is not None and self.oled.is_ready() and self.oled_enable:
+            if self.oled is not None and self.oled.is_ready():
                 self.oled.run()
             if self.fan is not None:
                 self.fan.run()
