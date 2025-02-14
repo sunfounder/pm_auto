@@ -52,7 +52,7 @@ class FanControl:
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
 
-        self.log.debug("FanControl init")
+        self.log.debug("Initializing FanControl")
         self.gpio_fan = Fan()
         self.spc_fan = Fan()
         self.pwm_fan = Fan()
@@ -88,6 +88,7 @@ class FanControl:
         self.level = 0
         self.initial = True
         self.__on_state_changed__ = lambda x: None
+        self.log.debug("FanControl initialized")
 
     def set_debug_level(self, level):
         self.log.setLevel(level)
@@ -98,7 +99,6 @@ class FanControl:
 
     @log_error
     def update_config(self, config):
-        self.log.debug(f"FAN update_config: {config}")
         if "gpio_fan_pin" in config:
             self.log.debug(f"Update gpio_fan_pin to {config['gpio_fan_pin']}")
             self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
