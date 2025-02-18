@@ -142,8 +142,8 @@ class PMAuto():
     @log_error
     def stop(self):
         if self.running:
+            self.running = False
             self.thread.join()
-        self.running = False
         if self.oled is not None and self.oled.is_ready():
             self.oled.close()
         if self.ws2812 is not None and self.ws2812.is_ready():
