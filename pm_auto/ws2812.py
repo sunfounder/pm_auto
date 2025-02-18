@@ -232,7 +232,7 @@ class WS2812():
             self.thread.join()
         self.clear()
         self.strip.show()
-        self.log.debug("WS2812 Stop")
+        self.log.debug("WS2812 stoped")
 
 
 

@@ -219,5 +219,5 @@ class OLED():
             self.oled.clear()
             self.oled.display()
             self.oled.off()
-            self.log.debug("OLED Close")
+            self.log.debug("OLED closed")
 

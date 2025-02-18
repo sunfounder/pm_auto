@@ -150,7 +150,7 @@ class PMAuto():
             self.ws2812.stop()
         if self.fan is not None:
             self.fan.close()
-        self.log.info("PM Auto Stop")
+        self.log.info("PM Auto stoped")
 
 
 class SPCAuto():
