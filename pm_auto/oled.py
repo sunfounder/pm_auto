@@ -43,6 +43,8 @@ class OLED():
         self.ip_show_next_interval = 3
         self.wake_flag = True
         self.wake_start_time = 0
+        self.last_ips = {}
+        
         self.update_config(config)
 
     @log_error
@@ -95,6 +97,7 @@ class OLED():
             'memory_total': memory_info.total,
             'memory_used': memory_info.used,
             'memory_percent': memory_info.percent,
+            'ips': []
         }
         # Get disk info
         disks_info = get_disks_info()
@@ -121,13 +124,25 @@ class OLED():
                 data['disk_mounted'] = False
         
         # Get IPs
-        if self.ip_interface == 'all':
-            data['ips'] = list(ips.values())
-        elif self.ip_interface in ips:
-            data['ips'] = [ips[self.ip_interface]]
-            self.ip_index = 0
-        else:
-            self.log.error(f"Invalid interface: {self.ip_interface}, available interfaces: {ips.keys()}")
+        for interface, ip in ips.items():
+            if interface not in self.last_ips:
+                self.log.info(f"Connected to {interface}: {ip}")
+            elif self.last_ips[interface] != ip:
+                self.log.info(f"IP changed for {interface}: {ip}")
+            self.last_ips[interface] = ip
+        for interface in self.last_ips.keys():
+            if interface not in ips:
+                self.log.info(f"Disconnected from {interface}")
+                self.last_ips.pop(interface)
+
+        if len(ips) > 0:
+            if self.ip_interface == 'all':
+                data['ips'] = list(ips.values())
+            elif self.ip_interface in ips:
+                data['ips'] = [ips[self.ip_interface]]
+                self.ip_index = 0
+            else:
+                self.log.warning(f"Invalid interface: {self.ip_interface}, available interfaces: {list(ips.keys())}")
 
         return data
 
