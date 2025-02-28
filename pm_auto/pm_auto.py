@@ -94,8 +94,6 @@ class PMAuto():
             self.ws2812.set_debug_level(level)
         if self.fan is not None:
             self.fan.set_debug_level(level)
-        if self.spc is not None:
-            self.spc.set_debug_level(level)
 
     @log_error
     def set_on_state_changed(self, callback):
