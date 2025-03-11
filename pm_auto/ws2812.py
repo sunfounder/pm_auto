@@ -24,9 +24,6 @@ default_config = {
 
 class WS2812():
 
-    lights_order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,]
-    leap_order = [0, 3, 1, 2, 4, 12, 5, 11, 6, 10, 7, 9, 8, 15, 13, 14]
-
     def __init__(self, config=default_config, get_logger=None):
         if get_logger is None:
             import logging
@@ -51,8 +48,8 @@ class WS2812():
             self.log.error("SPI not enabled")
         else:
             try:
-                self.init()
                 self.update_config(config)
+                self.init()
             except Exception as e:
                 self.log.error("Failed to initialize WS2812: %s" % e)
 
@@ -249,7 +246,9 @@ class WS2812():
         self.counter_max = 200
         if self.counter >= self.counter_max:
             self.counter = 0
+        # Map speed(0-100) to delay
         delay = map_value(self.speed, 0, 100, 0.1, 0.001)
+        # Re calculate color with nrightness
         color = [int(x * self.brightness * 0.01) for x in self.color]
 
         if self.counter < 100:
@@ -262,7 +261,7 @@ class WS2812():
         self.strip.show()
         time.sleep(delay)
 
-    def flow(self, order = None):
+    def flow(self, order=None):
         # self.log.debug(f"WS2812 Flow, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = self.led_count
         if self.counter >= self.counter_max:
@@ -271,16 +270,19 @@ class WS2812():
         color = [int(x * self.brightness * 0.01) for x in self.color]
         
         if order is None:
-            order = self.lights_order
+            order = range(self.led_count)
 
         self.strip.fill(0)
-        index = self.lights_order[self.counter]
+        index = order[self.counter]
         self.strip[index] = color
         self.strip.show()
         time.sleep(delay)
 
-    def flow_reverse(self):
-        order = self.lights_order[::-1]
+    def flow_reverse(self, order=None):
+        if order is None:
+            order = range(self.led_count)
+
+        order = order[::-1]
         self.flow(order)
 
     def rainbow(self, reverse=False):
