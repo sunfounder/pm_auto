@@ -19,6 +19,8 @@ class VibrationSwitch:
         self.update_config(config)
         self.log.info("VibrationSwitch initialized")
 
+        self.when_activated = None
+
     @log_error
     def set_debug_level(self, level):
         self.log.setLevel(level)
@@ -29,14 +31,18 @@ class VibrationSwitch:
 
     @log_error
     def update_config(self, config):
+        updated = False
         if 'vibration_switch_pin' in config:
             self.pin = config['vibration_switch_pin']
+            updated = True
         if 'vibration_switch_pull_up' in config:
             self.pull = config['vibration_switch_pull_up']
-        if self.init_gpio():
-            self._is_ready = True
-        else:
-            self._is_ready = False
+            updated = True
+        if updated:
+            if self.init_gpio():
+                self._is_ready = True
+            else:
+                self._is_ready = False
 
     @log_error
     def init_gpio(self):
@@ -47,8 +53,11 @@ class VibrationSwitch:
             return False
         self.log.info(f"Initializing VibrationSwitch on pin {self.pin} with pull_up={self.pull_up}")
         self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up)
+        if self.when_activated is not None:
+            self.device.when_activated = self.when_activated
         return True
 
     @log_error
     def set_on_vabration_detected(self, func):
+        self.when_activated = func
         self.device.when_activated = func

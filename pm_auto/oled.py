@@ -206,9 +206,10 @@ class OLED():
 
     @log_error
     def wake(self):
-        self.wake_flag = True
         self.wake_start_time = time.time()
-        self.draw_oled()
+        if self.wake_flag != True:
+            self.wake_flag = True
+            self.draw_oled()
 
     @log_error
     def sleep(self):
