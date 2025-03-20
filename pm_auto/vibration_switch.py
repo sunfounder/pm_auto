@@ -15,11 +15,11 @@ class VibrationSwitch:
         self.device = None
         self.pin = None
         self.pull_up = True
+        self.when_activated = None
 
         self.update_config(config)
         self.log.info("VibrationSwitch initialized")
 
-        self.when_activated = None
 
     @log_error
     def set_debug_level(self, level):
