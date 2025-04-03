@@ -69,12 +69,48 @@ class PMAuto():
             self.vibration_switch = VibrationSwitch(config, get_logger=get_logger)
             self.vibration_switch.set_on_vabration_detected(self.on_vabration_detected)
 
+        self.i2c_btn_thread = threading.Thread(target=self.i2c_pwr_btn_detected)
+        self.i2c_btn_thread.daemon = True
+        self.i2c_btn_thread.start()
+
+
         self.interval = 1
     
         self.thread = None
         self.running = False
 
         self.__on_state_changed__ = None
+
+
+    def i2c_pwr_btn_detected(self):
+        from .i2c import I2C
+
+        HAT_I2C_ADDR = 0x6A
+
+        hat_i2c = I2C()
+        if not hat_i2c.is_ready(HAT_I2C_ADDR):
+            self.log.error("Failed to initialize I2C")
+            return
+        #
+        FIRMWARE_VERSION_REG_ADDR = 0x00
+        DEFAULT_ON_REG_ADDR = 0x01
+        PWR_BTN_REG_ADDR = 0x02
+        SHUTDOWN_REQ_REG_ADDR = 0x03
+        #
+        result = hat_i2c._i2c_read_i2c_block_data(HAT_I2C_ADDR, FIRMWARE_VERSION_REG_ADDR, 1)[0]
+        major = result >> 6 & 0x03
+        minor = result >> 3 & 0x07
+        patch = result & 0x07
+        self.log.info(f"i2c hat firmware version: {major}.{minor}.{patch}")
+        #
+        while self.running:
+            result = hat_i2c._i2c_read_i2c_block_data(HAT_I2C_ADDR, PWR_BTN_REG_ADDR, 1)[0]
+            # print(f"i2c hat power button: {result}")
+            if result != 0: 
+                self.log.info("I2C power button detected")
+                hat_i2c._i2c_write_byte_data(HAT_I2C_ADDR, PWR_BTN_REG_ADDR, 0)
+                self.oled.wake()
+            time.sleep(0.1)
 
     @log_error
     def on_vabration_detected(self):
