@@ -1,7 +1,7 @@
 from gpiozero import DigitalInputDevice
-from .utils import log_error
+from ..libs.utils import log_error
 
-class VibrationSwitch:
+class VibrationSwitchService:
     def __init__(self, config, get_logger=None):
 
         if get_logger is None:
@@ -10,16 +10,12 @@ class VibrationSwitch:
         self.log = get_logger(__name__)
         self._is_ready = False
 
-        self.log.info("Initializing VibrationSwitch")
-
         self.device = None
         self.pin = None
         self.pull_up = True
         self.when_activated = None
 
         self.update_config(config)
-        self.log.info("VibrationSwitch initialized")
-
 
     @log_error
     def set_debug_level(self, level):
@@ -51,7 +47,7 @@ class VibrationSwitch:
             self.device = None
         if self.pin is None:
             return False
-        self.log.info(f"Initializing VibrationSwitch on pin {self.pin} with pull_up={self.pull_up}")
+        self.log.info(f"Initializing Vibration Switch on pin {self.pin} with pull_up={self.pull_up}")
         self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up)
         if self.when_activated is not None:
             self.device.when_activated = self.when_activated
@@ -61,3 +57,13 @@ class VibrationSwitch:
     def set_on_vabration_detected(self, func):
         self.when_activated = func
         self.device.when_activated = func
+
+    @log_error
+    def start(self):
+        # No need to start
+        pass
+
+    @log_error
+    def stop(self):
+        if self.device is not None:
+            self.device.close()

@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["pm_auto"]
+packages = ["pm_auto", "pm_auto.libs", "pm_auto.services"]
 
 [project.urls]
 "Homepage" = "https://github.com/sunfounder/pm_auto"

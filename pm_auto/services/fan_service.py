@@ -1,8 +1,10 @@
 import logging
 import subprocess
 import os
+import time
+import threading
 
-from .utils import run_command, log_error
+from ..libs.utils import run_command, log_error
 
 default_config = {
     "gpio_fan_pin": 6,
@@ -45,14 +47,16 @@ FAN_LEVELS = [
         "percent": 100,
     },
 ]
-class FanControl:
+
+INTERVAL = 1
+
+class FanService:
     @log_error
     def __init__(self, config, fans=[], get_logger=None):
         if get_logger is None:
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
 
-        self.log.debug("Initializing FanControl")
         self.gpio_fan = Fan()
         self.spc_fan = Fan()
         self.pwm_fan = Fan()
@@ -88,7 +92,8 @@ class FanControl:
         self.level = 0
         self.initial = True
         self.__on_state_changed__ = lambda x: None
-        self.log.debug("FanControl initialized")
+        self.running = False
+        self.thread = None
 
     def set_debug_level(self, level):
         self.log.setLevel(level)
@@ -176,7 +181,6 @@ class FanControl:
                 self.pwm_fan.set_state(self.level)
                 state['pwm_fan_speed'] = self.pwm_fan.get_speed()
 
-
             if changed:
                 self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
                 self.log.info(f"set fan power: {power}")
@@ -187,6 +191,12 @@ class FanControl:
                 self.initial = False
         
         self.__on_state_changed__(state)
+
+    @log_error
+    def loop(self):
+        while self.running:
+            self.run()
+            time.sleep(self.interval)
 
     @log_error
     def off(self):
@@ -205,7 +215,24 @@ class FanControl:
             self.spc_fan.close()
         if self.pwm_fan.is_ready():
             self.pwm_fan.close()
-        self.log.debug("FanControl closed")
+        self.log.debug("FanService closed")
+
+    @log_error
+    def start(self):
+        if self.running:
+            self.log.warning("Already running")
+            return
+        self.running = True
+        self.thread = threading.Thread(target=self.loop, daemon=True)
+        self.thread.start()
+
+    @log_error
+    def stop(self):
+        if self.running:
+            self.running = False
+            self.thread.join()
+        self.off()
+        self.close()
 
 def check_ready(func):
     def wrapper(self, *args, **kwargs):

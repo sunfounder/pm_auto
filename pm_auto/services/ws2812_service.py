@@ -6,7 +6,7 @@ import board
 import neopixel_spi as neopixel
 from os import path
 
-from .utils import map_value
+from ..libs.utils import map_value
 from math import cos, pi
 
 RGB_STYLES = [
@@ -22,7 +22,7 @@ default_config = {
     'rgb_speed': 50,
 }
 
-class WS2812():
+class WS2812Service():
 
     def __init__(self, config=default_config, get_logger=None):
         if get_logger is None:
@@ -51,7 +51,7 @@ class WS2812():
                 self.update_config(config)
                 self.init()
             except Exception as e:
-                self.log.error("Failed to initialize WS2812: %s" % e)
+                self.log.error("Failed to initialize WS2812 Service: %s" % e)
 
     def set_debug_level(self, level):
         self.log.setLevel(level)
@@ -192,7 +192,7 @@ class WS2812():
         self.counter = 0
         self.counter_max = 100
         if not self.is_ready():
-            self.log.error("WS2812 not ready")
+            self.log.error("WS2812 Service not ready")
             return
         while self.running:
             if not self.enable:
@@ -209,7 +209,7 @@ class WS2812():
                 self.log.error(f'Style error: {e}')
                 time.sleep(5)
             except Exception as e:
-                self.log.error(f'WS2812 error: {type(e)} {e}')
+                self.log.error(f'WS2812 Service error: {type(e)} {e}')
                 time.sleep(5)
             self.counter += 1
             if self.counter >= self.counter_max:
@@ -220,7 +220,7 @@ class WS2812():
             self.log.warning("Already running")
             return
         self.running = True
-        self.thread = threading.Thread(target=self.loop)
+        self.thread = threading.Thread(target=self.loop, daemon=True)
         self.thread.start()
 
     def stop(self):
@@ -229,9 +229,7 @@ class WS2812():
             self.thread.join()
         self.clear()
         self.strip.show()
-        self.log.debug("WS2812 stoped")
-
-
+        self.log.debug("WS2812 Service stoped")
 
     # styles
     def solid(self):

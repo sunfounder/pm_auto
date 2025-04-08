@@ -73,10 +73,9 @@ class SSD1306Base(object):
     and provide an implementation for the _initialize function.
     """
 
-    def __init__(self, width, height, i2c_bus=None, i2c_address=SSD1306_I2C_ADDRESS_1, i2c=None):
+    def __init__(self, width, height, i2c_bus=None, address=SSD1306_I2C_ADDRESS_1, i2c=None):
 
-        self._i2c = I2C()
-        self.addr = i2c_address
+        self._i2c = I2C(address)
         self.width = width
         self.height = height
         self._pages = height//8
@@ -89,13 +88,13 @@ class SSD1306Base(object):
         """Send write_command byte to display."""
         # I2C write.
         control = 0x00   # Co = 0, DC = 0
-        self._i2c._i2c_write_byte_data(self.addr, control, c)
+        self._i2c.write_byte_data(control, c)
 
     def write_data(self, c):
         """Send byte of data to display."""
         # I2C write.
         control = 0x40   # Co = 0, DC = 0
-        self._i2c._i2c_write_byte_data(self.addr, control, c)
+        self._i2c.write_byte_data(control, c)
 
     def begin(self, vccstate=SSD1306_SWITCHCAPVCC):
         """Initialize display."""
@@ -124,7 +123,7 @@ class SSD1306Base(object):
         # Write buffer data.
         for i in range(0, len(self._buffer), 16):
             control = 0x40   # Co = 0, DC = 0
-            self._i2c._i2c_write_i2c_block_data(self.addr, control, self._buffer[i:i+16])
+            self._i2c.write_i2c_block_data(control, self._buffer[i:i+16])
 
     def image(self, image):
         """Set buffer to value of Python Imaging Library image.  The image should

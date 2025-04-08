@@ -1,4 +1,5 @@
-from .ssd1306 import SSD1306, Rect
+from pm_auto.services.pironman_mcu_service import INTERVAL
+from ..libs.ssd1306 import SSD1306, Rect
 from sf_rpi_status import \
     get_cpu_temperature, \
     get_cpu_percent, \
@@ -6,8 +7,11 @@ from sf_rpi_status import \
     get_disks_info, \
     get_ips
 
-from .utils import format_bytes, log_error
+from ..libs.utils import format_bytes, log_error
 import time
+import threading
+
+INTERVAL = 1
 
 OLED_DEFAULT_CONFIG = {
     'temperature_unit': 'C',
@@ -18,7 +22,7 @@ OLED_DEFAULT_CONFIG = {
     'oled_sleep_timeout': 0,
 }
 
-class OLED():
+class OLEDService():
     @log_error
     def __init__(self, config, get_logger=None):
         if get_logger is None:
@@ -29,7 +33,7 @@ class OLED():
 
         self.oled = SSD1306(get_logger=get_logger)
         if not self.oled.is_ready():
-            self.log.error("Failed to initialize OLED")
+            self.log.error("Failed to initialize OLED service")
             return
         self._is_ready = self.oled.is_ready()
 
@@ -44,6 +48,9 @@ class OLED():
         self.wake_flag = True
         self.wake_start_time = 0
         self.last_ips = {}
+
+        self.running = False
+        self.thread = None
         
         self.update_config(config)
 
@@ -205,6 +212,12 @@ class OLED():
         self.oled.display()
 
     @log_error
+    def show_shutdown_screen(self, reason):
+        self.oled.clear()
+        self.oled.draw_text(f'Power OFF', 32, 16, align='center')
+        self.oled.display()
+
+    @log_error
     def wake(self):
         self.wake_start_time = time.time()
         if self.wake_flag != True:
@@ -218,22 +231,41 @@ class OLED():
         self.oled.display()
 
     @log_error
-    def run(self):
-        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False:
-            return
+    def loop(self):
+        while self.running:
+            if self.oled is None or not self.oled.is_ready():
+                self.log.error("OLED service not ready")
+                return
 
-        if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout and self.wake_flag == True:
-            self.log.info("OLED sleep timeout, sleeping")
-            self.sleep()
-            return
+            if  self.wake_flag == False:
+                time.sleep(INTERVAL)
+                continue
 
-        self.draw_oled()
+            if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout and self.wake_flag == True:
+                self.log.info("OLED sleep timeout, sleeping")
+                self.sleep()
+                continue
+
+            self.draw_oled()
+            time.sleep(INTERVAL)
 
     @log_error
-    def close(self):
+    def start(self):
+        if self.running:
+            self.log.warning("OLED service already running")
+            return
+        self.running = True
+        self.thread = threading.Thread(target=self.loop, daemon=True)
+        self.thread.start()
+
+    @log_error
+    def stop(self):
+        self.running = False
+        if self.thread is not None:
+            self.thread.join()
         if self.oled is not None and self.oled.is_ready():
             self.oled.clear()
             self.oled.display()
             self.oled.off()
-            self.log.debug("OLED closed")
+            self.log.debug("OLED service closed")
 

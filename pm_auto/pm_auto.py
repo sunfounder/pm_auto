@@ -1,12 +1,8 @@
 import time
 import threading
-from sf_rpi_status import shutdown
 
-from .utils import has_common_items, log_error
+from .libs.utils import has_common_items, log_error
 
-from .fan_control import FanControl, FANS
-from .vibration_switch import VibrationSwitch
-from .oled import OLED
 
 app_name = 'pm_auto'
 
@@ -45,80 +41,64 @@ class PMAuto():
         self.fan = None
         self.spc = None
         self.vibration_switch = None
+        self.pironman_mcu = None
+
         if 'oled' in peripherals:
-            self.log.debug("Initializing OLED")
-            self.oled = OLED(config, get_logger=get_logger)
+            from .services.oled_service import OLEDService
+            self.log.debug("Initializing OLED service")
+            self.oled = OLEDService(config, get_logger=get_logger)
             if not self.oled.is_ready():
                 self.log.error("Failed to initialize OLED")
             else:
-                self.log.debug("OLED initialized")            
+                self.log.debug("OLED service initialized")            
         if 'ws2812' in peripherals:
-            from .ws2812 import WS2812  
-            self.ws2812 = WS2812(config, get_logger=get_logger)
+            self.log.debug("Initializing WS2812 service")
+            from .services.ws2812_service import WS2812Service
+            self.ws2812 = WS2812Service(config, get_logger=get_logger)
             if not self.ws2812.is_ready():
-                self.log.error("Failed to initialize WS2812")
+                self.log.error("Failed to initialize WS2812 service")
             else:
-                self.log.debug("WS2812 initialized")
-                self.ws2812.start()
+                self.log.debug("WS2812 service initialized")
         # if FANS in peripherals:
         if self.fan_enabled() or 'spc' in peripherals:
-            self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
+            self.log.debug("Initializing Fan service")
+            from .services.fan_service import FanService
+            self.fan = FanService(config, fans=peripherals, get_logger=get_logger)
+            self.log.debug("Fan service initialized")
         if 'spc' in peripherals:
-            self.spc = SPCAuto(get_logger=get_logger)
+            self.log.debug("Initializing SPC service")
+            from .services.spc_service import SPCService
+            self.spc = SPCService(get_logger=get_logger)
+            self.log.debug("SPC service initialized")
         if 'vibration_switch' in peripherals:
-            self.vibration_switch = VibrationSwitch(config, get_logger=get_logger)
-            self.vibration_switch.set_on_vabration_detected(self.on_vabration_detected)
-
-        self.i2c_btn_thread = threading.Thread(target=self.i2c_pwr_btn_detected)
-        self.i2c_btn_thread.daemon = True
-        self.i2c_btn_thread.start()
-
-
-        self.interval = 1
-    
-        self.thread = None
-        self.running = False
+            self.log.debug("Initializing Vibration switch service")
+            from .services.vibration_switch_service import VibrationSwitchService
+            self.vibration_switch = VibrationSwitchService(config, get_logger=get_logger)
+            self.vibration_switch.set_on_vabration_detected(self.wake_oled)
+            self.log.debug("Vibration switch service initialized")
+        if 'pironman_mcu' in peripherals:
+            self.log.debug("Initializing Pironman MCU service")
+            from.services.pironman_mcu_service import PironmanMCUService
+            self.pironman_mcu = PironmanMCUService(config, get_logger=get_logger)
+            self.pironman_mcu.set_on_wakeup(self.wake_oled)
+            self.pironman_mcu.set_on_shutdown(self.on_shutdown)
+            self.log.debug("Pironman MCU service initialized")
 
         self.__on_state_changed__ = None
 
-
-    def i2c_pwr_btn_detected(self):
-        from .i2c import I2C
-
-        HAT_I2C_ADDR = 0x6A
-
-        hat_i2c = I2C()
-        if not hat_i2c.is_ready(HAT_I2C_ADDR):
-            self.log.error("Failed to initialize I2C")
-            return
-        #
-        FIRMWARE_VERSION_REG_ADDR = 0x00
-        DEFAULT_ON_REG_ADDR = 0x01
-        PWR_BTN_REG_ADDR = 0x02
-        SHUTDOWN_REQ_REG_ADDR = 0x03
-        #
-        result = hat_i2c._i2c_read_i2c_block_data(HAT_I2C_ADDR, FIRMWARE_VERSION_REG_ADDR, 1)[0]
-        major = result >> 6 & 0x03
-        minor = result >> 3 & 0x07
-        patch = result & 0x07
-        self.log.info(f"i2c hat firmware version: {major}.{minor}.{patch}")
-        #
-        while self.running:
-            result = hat_i2c._i2c_read_i2c_block_data(HAT_I2C_ADDR, PWR_BTN_REG_ADDR, 1)[0]
-            # print(f"i2c hat power button: {result}")
-            if result != 0: 
-                self.log.info("I2C power button detected")
-                hat_i2c._i2c_write_byte_data(HAT_I2C_ADDR, PWR_BTN_REG_ADDR, 0)
-                self.oled.wake()
-            time.sleep(0.1)
-
     @log_error
-    def on_vabration_detected(self):
-        self.log.info("Vibration detected")
+    def wake_oled(self):
+        self.log.info("Wake OLED")
         self.oled.wake()
 
     @log_error
+    def on_shutdown(self, reason):
+        self.log.info(f"Shutdown reason: {reason}")
+        self.oled.show_shutdown_screen(reason)
+
+    @log_error
     def fan_enabled(self):
+        from .services.fan_service import FANS
         return has_common_items(FANS, self.peripherals)
 
     @log_error
@@ -130,6 +110,12 @@ class PMAuto():
             self.ws2812.set_debug_level(level)
         if self.fan is not None:
             self.fan.set_debug_level(level)
+        if self.spc is not None:
+            self.spc.set_debug_level(level)
+        if self.vibration_switch is not None:
+            self.vibration_switch.set_debug_level(level)
+        if self.pironman_mcu is not None:
+            self.pironman_mcu.set_debug_level(level)
 
     @log_error
     def set_on_state_changed(self, callback):
@@ -151,107 +137,39 @@ class PMAuto():
             self.fan.update_config(config)
         if 'vibration_switch' in self.peripherals:
             self.vibration_switch.update_config(config)
-
-    @log_error
-    def loop(self):
-        while self.running:
-            if self.oled is not None and self.oled.is_ready():
-                self.oled.run()
-            if self.fan is not None:
-                self.fan.run()
-            if self.spc is not None and self.spc.is_ready():
-                self.spc.run()
-            time.sleep(self.interval)
+        if 'pironman_mcu' in self.peripherals:
+            self.pironman_mcu.update_config(config)
 
     @log_error
     def start(self):
-        if self.running:
-            self.log.warning("Already running")
-            return
-        self.running = True
-        self.thread = threading.Thread(target=self.loop)
-        self.thread.start()
+        if self.oled is not None and self.oled.is_ready():
+            self.oled.start()
+        if self.ws2812 is not None and self.ws2812.is_ready():
+            self.ws2812.start()
+        if self.fan is not None:
+            self.fan.start()
+        if self.spc is not None and self.spc.is_ready():
+            self.spc.start()
+        if self.vibration_switch is not None:
+            self.vibration_switch.start()
+        if self.pironman_mcu is not None:
+            self.pironman_mcu.start()
+
         self.log.info("PM Auto Start")
 
     @log_error
     def stop(self):
-        if self.running:
-            self.running = False
-            self.thread.join()
         if self.oled is not None and self.oled.is_ready():
-            self.oled.close()
+            self.oled.stop()
         if self.ws2812 is not None and self.ws2812.is_ready():
             self.ws2812.stop()
         if self.fan is not None:
-            self.fan.close()
+            self.fan.stop()
+        if self.spc is not None and self.spc.is_ready():
+            self.spc.stop()
+        if self.vibration_switch is not None:
+            self.vibration_switch.stop()
+        if self.pironman_mcu is not None:
+            self.pironman_mcu.stop()
         self.log.info("PM Auto stoped")
 
-
-class SPCAuto():
-    @log_error
-    def __init__(self, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
-        self._is_ready = False
-
-        from spc.spc import SPC
-        self.spc = SPC(get_logger=get_logger)
-        if not self.spc.is_ready():
-            self._is_ready = False
-            return
-
-        self._is_ready = True
-        self.shutdown_request = 0
-        self.is_plugged_in = False
-
-    @log_error
-    def is_ready(self):
-        return self._is_ready
-
-    @log_error
-    def handle_shutdown(self):
-        if self.spc is None or not self.spc.is_ready():
-            return
-
-        shutdown_request = self.spc.read_shutdown_request()
-        if shutdown_request != self.shutdown_request:
-            self.shutdown_request = shutdown_request
-            self.log.debug(f"Shutdown request: {shutdown_request}")
-        if shutdown_request in self.spc.SHUTDOWN_REQUESTS:
-            if shutdown_request == self.spc.SHUTDOWN_REQUEST_LOW_POWER:
-                self.log.info('Low power shutdown.')
-            elif shutdown_request == self.spc.SHUTDOWN_REQUEST_BUTTON:
-                self.log.info('Button shutdown.')
-            shutdown()
-
-    @log_error
-    def handle_external_input(self):
-        if self.spc is None or not self.spc.is_ready():
-            return
-
-        if 'external_input' not in self.spc.device.peripherals:
-            return
-
-        if 'battery' not in self.spc.device.peripherals:
-            return
-
-        is_plugged_in = self.spc.read_is_plugged_in()
-        if is_plugged_in != self.is_plugged_in:
-            self.is_plugged_in = is_plugged_in
-            if is_plugged_in == True:
-                self.log.info(f"External input plug in")
-            else:
-                self.log.info(f"External input unplugged")
-        if is_plugged_in == False:
-            shutdown_pct = self.spc.read_shutdown_battery_pct()
-            current_pct= self.spc.read_battery_percentage()
-            if current_pct < shutdown_pct:
-                self.log.info(f"Battery is below {shutdown_pct}, shutdown!", level="INFO")
-                shutdown()
-
-    @log_error
-    def run(self):
-        self.handle_external_input()
-        self.handle_shutdown()
