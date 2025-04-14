@@ -5,9 +5,10 @@
 #
 import threading
 import time
+from enum import IntEnum
 
 from ..libs.utils import log_error
-from ..libs.pironman_mcu import PironmanMCU
+from ..libs.pironman_mcu import PironmanMCU, ShutdownReason
 from sf_rpi_status import shutdown
 
 INTERVAL = 0.1
@@ -62,10 +63,10 @@ class PironmanMCUService:
             if wakeup_button:
                 self.log.info("Button wakeup")
                 self.__on_wakeup__()
-            if shutdown_request != 0:
-                self.log.info("Shutdown request")
+            if shutdown_request != ShutdownReason.NONE:
+                self.log.info(f"Shutdown request {ShutdownReason(shutdown_request).name}")
                 self.__on_shutdown__(shutdown_request)
-                time.sleep(2)
+                time.sleep(3)
                 shutdown()
             time.sleep(INTERVAL)
 

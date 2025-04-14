@@ -238,27 +238,38 @@ class Rect:
     def rect(self, pecent=100):
         return (self.x, self.y, self.x + int(self.width*pecent/100.0), self.y2)
 
-class SSD1306():
-    def __init__(self, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+class I2cNotEnabled(Exception):
+    """I2C总线未启用的异常"""
+    def __init__(self, message="I2C interface not enabled"):
+        super().__init__(message)
+        self.advice = (
+            "请检查以下配置：\n"
+            "1. 在Raspberry Pi上启用I2C：sudo raspi-config → Interface Options → I2C → Yes\n"
+            "2. 确认硬件连接正常\n"
+            "3. 加载i2c-dev模块：sudo modprobe i2c-dev"
+        )
 
+class OLEDNotDetected(Exception):
+    """OLED未检测到的异常"""
+    def __init__(self, message="OLED is not detected"):
+        super().__init__(message)
+        self.advice = (
+            "确认OLED已正确连接\n" 
+        )
+    
+class SSD1306():
+    def __init__(self):
         self._is_ready = False
         self.oled = None
         self.rotation = 0
         if not I2C.enabled():
-            _, result = run_command("ls /dev/i2c*")
-            self.log.error(f"I2C is not enabled. ls /dev/i2c* returned: \n{result}")
-        else:
-            addresses = self.check_oled()
-            if len(addresses) == 0:
-                self.log.error("No OLED found")
-            else:
-                self.oled = SSD1306_128_64(i2c_address=addresses[0])
-                self.init()
-                self._is_ready = True
+            raise I2cNotEnabled()
+        addresses = self.check_oled()
+        if len(addresses)==0:
+            raise OLEDNotDetected()
+        self.oled = SSD1306_128_64(i2c_address=addresses[0])
+        self.init()
+        self._is_ready = True
 
     def set_rotation(self, rotation):
         self.rotation = rotation
@@ -284,22 +295,21 @@ class SSD1306():
 
         self.image = Image.new('1', (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image)
-        font_path = str(resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf'))
-        self.font_8 = ImageFont.truetype(font_path, 8)
-        self.font_12 = ImageFont.truetype(font_path, 12)
+        self.font_path = str(resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf'))
 
     def clear(self):
         self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
         self.oled.clear()
 
-    def draw_text(self, text, x, y, fill=1, align='left'):
+    def draw_text(self, text, x, y, fill=1, align='left', size=8):
         text = str(text)
-        text_width = self.font_8.getlength(text)
+        font = ImageFont.truetype(self.font_path, size)
+        text_width = font.getlength(text)
         if align == 'center':
             x -= text_width / 2
         elif align == 'right':
             x -= text_width
-        self.draw.text((x, y), text=text, font=self.font_8, fill=fill)
+        self.draw.text((x, y), text=text, font=font, fill=fill)
 
     def draw_bar_graph_horizontal(self, percent, x, y, width, height):
         self.draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)

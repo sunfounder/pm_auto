@@ -93,7 +93,7 @@ class PMAuto():
 
     @log_error
     def on_shutdown(self, reason):
-        self.log.info(f"Shutdown reason: {reason}")
+        self.log.info(f"Auto Shutdown reason: {reason}")
         self.oled.show_shutdown_screen(reason)
 
     @log_error

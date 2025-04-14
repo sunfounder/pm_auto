@@ -6,10 +6,11 @@ from sf_rpi_status import \
     get_memory_info, \
     get_disks_info, \
     get_ips
-
+from ..libs.i2c import I2C
 from ..libs.utils import format_bytes, log_error
 import time
 import threading
+from enum import Enum
 
 INTERVAL = 1
 
@@ -22,6 +23,10 @@ OLED_DEFAULT_CONFIG = {
     'oled_sleep_timeout': 0,
 }
 
+class OLEDPage(Enum):
+    POWER_OFF = 0
+    ALL_INFO = 1
+
 class OLEDService():
     @log_error
     def __init__(self, config, get_logger=None):
@@ -31,9 +36,10 @@ class OLEDService():
         self.log = get_logger(__name__)
         self._is_ready = False
 
-        self.oled = SSD1306(get_logger=get_logger)
-        if not self.oled.is_ready():
-            self.log.error("Failed to initialize OLED service")
+        try:
+            self.oled = SSD1306()
+        except Exception as e:
+            self.log.error(f"Failed to initialize OLED service: {e}")
             return
         self._is_ready = self.oled.is_ready()
 
@@ -51,6 +57,7 @@ class OLEDService():
 
         self.running = False
         self.thread = None
+        self.current_page = OLEDPage.ALL_INFO
         
         self.update_config(config)
 
@@ -154,7 +161,7 @@ class OLEDService():
         return data
 
     @log_error
-    def draw_oled(self):
+    def draw_all_info(self):
         data = self.get_data()
         # Get system status data
         cpu_temp_c = data['cpu_temperature']
@@ -212,17 +219,21 @@ class OLEDService():
         self.oled.display()
 
     @log_error
-    def show_shutdown_screen(self, reason):
+    def draw_power_off(self):
         self.oled.clear()
-        self.oled.draw_text(f'Power OFF', 32, 16, align='center')
+        self.oled.draw_text(f'POWER OFF', 64, 20, align='center', size=16)
         self.oled.display()
+
+    @log_error
+    def show_shutdown_screen(self, reason):
+        self.log.info(f"Shutdown reason: {reason}")
+        self.current_page = OLEDPage.POWER_OFF
+        self.wake()
 
     @log_error
     def wake(self):
         self.wake_start_time = time.time()
-        if self.wake_flag != True:
-            self.wake_flag = True
-            self.draw_oled()
+        self.wake_flag = True
 
     @log_error
     def sleep(self):
@@ -238,15 +249,18 @@ class OLEDService():
                 return
 
             if  self.wake_flag == False:
-                time.sleep(INTERVAL)
+                time.sleep(0.05)
                 continue
 
-            if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout and self.wake_flag == True:
+            if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout:
                 self.log.info("OLED sleep timeout, sleeping")
                 self.sleep()
                 continue
 
-            self.draw_oled()
+            if self.current_page == OLEDPage.ALL_INFO:
+                self.draw_all_info()
+            elif self.current_page == OLEDPage.POWER_OFF:
+                self.draw_power_off()
             time.sleep(INTERVAL)
 
     @log_error
