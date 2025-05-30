@@ -296,10 +296,10 @@ class WS2812():
         leds = list(range(self.led_count))
         if reverse:
             leds.reverse()
-        for i in leds:
+        for i, led in enumerate(leds):
             hue = rainbow_pattern[i]
             color = self.hsl_to_rgb(hue, 1, self.brightness * 0.01)
-            self.strip[i] = color
+            self.strip[led] = color
         self.strip.show()
 
         time.sleep(delay)

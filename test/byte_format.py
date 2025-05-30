@@ -1,23 +1,4 @@
 
-def map_value(x, from_min, from_max, to_min, to_max):
-    return (x - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
-
-def log_error(func):
-    def wrapper(self, *args, **kwargs):
-        try:
-            return func(self, *args, **kwargs)
-        except Exception as e:
-            self.log.exception(str(e))
-    return wrapper
-
-def run_command(cmd):
-    import subprocess
-    p = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    result = p.stdout.read().decode()
-    status = p.poll()
-    return status, result
-
 def format_bytes_auto(size, auto_threshold=1024):
     # 定义字节单位
     units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
@@ -54,5 +35,19 @@ def format_bytes(size, to_unit=None, auto_threshold=1024):
     else:
         return format_bytes_auto(size, auto_threshold=auto_threshold)
 
-def has_common_items(list1, list2):
-    return bool(set(list1) & set(list2))
+def big_number(number):
+    # 给大数字，每3位数增加逗号分隔
+    number_str = "{:,}".format(number)
+    return number_str
+
+def main():
+    import math
+    # test_list = [1, 100, 500, 1000, 5000, 1000000, 5000000, 1000000000, 5000000000, 1000000000000, 500000000000000, 100000000000000000, 500000000000000000]
+    test_list = [math.pow(10, i) for i in range(1, 21)]
+    for i in test_list:
+        formated, unit = format_bytes(i, auto_threshold=100)
+
+        print(f"{big_number(i)} -> {formated} {unit}")
+
+if __name__ == "__main__":
+    main()

@@ -73,7 +73,8 @@ class OLED():
             self.sleep_timeout = config['oled_sleep_timeout']
         if "oled_enable" in config:
             self.log.debug(f"Update oled_enable to {config['oled_enable']}")
-            if config['oled_enable']:
+            self.enable = config['oled_enable']
+            if self.enable:
                 self.wake()
             else:
                 self.sleep()
@@ -153,10 +154,10 @@ class OLED():
         cpu_temp_c = data['cpu_temperature']
         cpu_temp_f = cpu_temp_c * 9 / 5 + 32
         cpu_usage = data['cpu_percent']
-        memory_total, memory_unit = format_bytes(data['memory_total'])
+        memory_total, memory_unit = format_bytes(data['memory_total'], auto_threshold=100)
         memory_used = format_bytes(data['memory_used'], memory_unit)
         memory_percent = data['memory_percent']
-        disk_total, disk_unit = format_bytes(data['disk_total'])
+        disk_total, disk_unit = format_bytes(data['disk_total'], auto_threshold=100)
         if data['disk_mounted']:
             disk_used = format_bytes(data['disk_used'], disk_unit)
             disk_percent = data['disk_percent']
@@ -206,6 +207,9 @@ class OLED():
 
     @log_error
     def wake(self):
+        if self.oled is None or not self.oled.is_ready() or self.enable == False:
+            return
+        self.log.debug("OLED wake up")
         self.wake_start_time = time.time()
         if self.wake_flag != True:
             self.wake_flag = True
@@ -219,7 +223,7 @@ class OLED():
 
     @log_error
     def run(self):
-        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False:
+        if self.oled is None or not self.oled.is_ready() or self.wake_flag == False or self.enable == False:
             return
 
         if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout and self.wake_flag == True:
