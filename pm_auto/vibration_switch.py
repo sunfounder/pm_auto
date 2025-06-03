@@ -52,7 +52,7 @@ class VibrationSwitch:
         if self.pin is None:
             return False
         self.log.info(f"Initializing VibrationSwitch on pin {self.pin} with pull_up={self.pull_up}")
-        self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up, bounce_time=0.02)
+        self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up)
         if self.when_activated is not None:
             self.device.when_activated = self.when_activated
         return True

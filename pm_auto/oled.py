@@ -6,7 +6,7 @@ from sf_rpi_status import \
     get_disks_info, \
     get_ips
 
-from .utils import format_bytes, log_error
+from .utils import format_bytes, log_error, DebounceRunner
 import time
 
 OLED_DEFAULT_CONFIG = {
@@ -44,6 +44,7 @@ class OLED():
         self.wake_flag = True
         self.wake_start_time = 0
         self.last_ips = {}
+        self.debounce_display = DebounceRunner(self.oled.display, 0.5)
         
         self.update_config(config)
 
@@ -203,7 +204,7 @@ class OLED():
         self.oled.draw_text(ip, *ip_rect.topcenter(), fill=0, align='center')
 
         # draw the image buffer
-        self.oled.display()
+        self.debounce_display()
 
     @log_error
     def wake(self):

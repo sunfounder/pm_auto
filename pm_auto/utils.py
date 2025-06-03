@@ -1,3 +1,5 @@
+import time
+
 
 def map_value(x, from_min, from_max, to_min, to_max):
     return (x - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
@@ -56,3 +58,35 @@ def format_bytes(size, to_unit=None, auto_threshold=1024):
 
 def has_common_items(list1, list2):
     return bool(set(list1) & set(list2))
+
+
+class DebounceRunner():
+    ''' Lazy reader. Read something in a given interval,
+    even if you read it multiple times in a short time.
+    For those who don't need to read it too frequently.
+    '''
+    def __init__(self, function, interval=10):
+        ''' Initialize the lazy reader.
+
+        Args:
+            function (function): The function to read.
+            interval (int): The interval to read.
+        '''
+        self.function = function
+        self.interval = interval
+        self.value = None
+        self.last_read_time = 0
+
+    def run(self):
+        ''' Read the value.
+
+        Returns:
+            The value.
+        '''
+        if time.time() - self.last_read_time > self.interval:
+            self.value = self.function()
+            self.last_read_time = time.time()
+        return self.value
+
+    def __call__(self):
+        return self.run()
