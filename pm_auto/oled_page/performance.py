@@ -20,7 +20,7 @@ fan_icon = str(grandparent_dir) + '/icons/fan_icon_24.png'
 
 pwm_fan = PWMFan()
 
-def oled_page_performance_2(oled):
+def oled_page_performance(oled):
     cpu_temp_c = get_cpu_temperature()
     cpu_temp_f = cpu_temp_c * 9 / 5 + 32
     cpu_usage = get_cpu_percent()
