@@ -8,6 +8,7 @@ from sf_rpi_status import \
     get_ips
 from ..libs.i2c import I2C
 from ..libs.utils import format_bytes, log_error
+
 import time
 import threading
 from enum import Enum
@@ -52,6 +53,7 @@ class OLEDService():
         self.ip_show_next_timestamp = 0
         self.ip_show_next_interval = 3
         self.wake_flag = True
+        self.button = False
         self.wake_start_time = 0
         self.last_ips = {}
 
@@ -235,6 +237,9 @@ class OLEDService():
         self.wake_start_time = time.time()
         self.wake_flag = True
 
+    def set_button(self, button_state):
+        self.button = button_state
+
     @log_error
     def sleep(self):
         self.wake_flag = False
@@ -243,25 +248,65 @@ class OLEDService():
 
     @log_error
     def loop(self):
+        from ..oled_page.ips import oled_page_ips
+        from ..oled_page.disk import oled_page_disk
+        from ..oled_page.performance import oled_page_performance
+
+        page = [
+            oled_page_performance,
+            oled_page_ips,
+            oled_page_disk,
+            ]
+    
+        page_index = 0
+        last_page_index = -1
+        last_refresh_time = 0
+
+        if self.oled is None or not self.oled.is_ready():
+            self.log.error("OLED service not ready")
+            return
+
         while self.running:
-            if self.oled is None or not self.oled.is_ready():
-                self.log.error("OLED service not ready")
-                return
 
-            if  self.wake_flag == False:
-                time.sleep(0.05)
-                continue
+            if self.button == 'single_click':
+                if not self.wake_flag:
+                    self.log.info("OLED service waking up")
+                    self.wake_flag = True
+                    last_page_index = -1
+                else:
+                    page_index += 1
+                    if page_index >= len(page):
+                        page_index = 0
+                self.button = False
+                self.wake_start_time = time.time()
+            elif self.button == 'double_click':
+                if self.wake_flag:
+                    page_index -= 1
+                    if page_index < 0:
+                        page_index = len(page) - 1
+                    self.wake_start_time = time.time()
+                    
+            if self.wake_flag:
+                if last_page_index != page_index or time.time() - last_refresh_time > INTERVAL:
+                    last_page_index = page_index
+                    last_refresh_time = time.time()
+                    page[page_index](self.oled)
 
-            if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout:
-                self.log.info("OLED sleep timeout, sleeping")
-                self.sleep()
-                continue
+                if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout:
+                    self.log.info("OLED sleep timeout, sleeping")
+                    self.sleep()
+                    continue
 
-            if self.current_page == OLEDPage.ALL_INFO:
-                self.draw_all_info()
-            elif self.current_page == OLEDPage.POWER_OFF:
+
+            if self.current_page == OLEDPage.POWER_OFF:
                 self.draw_power_off()
-            time.sleep(INTERVAL)
+
+                while True:
+                    if self.button == 'long_press_2s_released':
+                        self.wake_flag = False
+                        self.sleep()
+
+            time.sleep(.05)
 
     @log_error
     def start(self):
