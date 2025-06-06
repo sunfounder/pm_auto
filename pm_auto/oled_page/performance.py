@@ -11,15 +11,12 @@ import time
 from .oled_config import *
 from .uilts import *
 
-
-
-from importlib.resources import files as resource_files
-__package_name__ = __name__.split('.')[0]
-cpu_icon = str(resource_files(__package_name__).joinpath('icons/cpu_icon_24.png'))
-ram_icon = str(resource_files(__package_name__).joinpath('icons/ram_icon_24.png'))
-temp_icon = str(resource_files(__package_name__).joinpath('icons/temperature_icon_24.png'))
-fan_icon = str(resource_files(__package_name__).joinpath('icons/fan_icon_24.png'))
-
+from pathlib import Path
+grandparent_dir = Path(__file__).resolve().parent.parent
+cpu_icon = str(grandparent_dir) + '/icons/cpu_icon_24.png'
+ram_icon = str(grandparent_dir) + '/icons/ram_icon_24.png'
+temp_icon = str(grandparent_dir) + '/icons/temperature_icon_24.png'
+fan_icon = str(grandparent_dir) + '/icons/fan_icon_24.png'
 
 pwm_fan = PWMFan()
 
@@ -50,7 +47,7 @@ def oled_page_performance_2(oled):
     oled.draw_text('CPU', 28, 0, size=10)
     oled.draw_text(f"{cpu_usage}%", 25, 10, size=16)
 
-    oled.draw_icon(ram_icon, 0, 32, scale=1, invert=False)
+    oled.draw_icon(ram_icon, 0, 32, scale=1, invert=False, dither=False, threshold=127)
     oled.draw_text('RAM', 28, 30, size=10)
     oled.draw_text(f"{memory_percent}%", 25, 38, size=14)
     oled.draw_text(f"{memory_used} / {memory_total} {memory_unit}", 0, 53, size=12)
@@ -59,7 +56,7 @@ def oled_page_performance_2(oled):
     oled.draw_text('TEMP', 95, 0, size=10)
     oled.draw_text(f"{int(temp):d}°{temperature_unit}", 93, 10, size=16)
 
-    oled.draw_icon(fan_icon, 69, 33, scale=1, invert=False)
+    oled.draw_icon(fan_icon, 69, 33, scale=1, invert=False, dither=False, threshold=127)
     oled.draw_text('FAN', 95, 32, size=10)
     oled.draw_text(f"{fan_speed}", 93, 40, size=16)
 

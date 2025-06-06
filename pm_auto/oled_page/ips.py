@@ -8,12 +8,12 @@ import time
 
 from.oled_config import *
 
-from importlib.resources import files as resource_files
-__package_name__ = __name__.split('.')[0]
-ethernet_icon = str(resource_files(__package_name__).joinpath('icons/ethernet_icon_20.png'))
-wifi_icon = str(resource_files(__package_name__).joinpath('icons/wifi_icon_20.png'))
-net_icon = str(resource_files(__package_name__).joinpath('icons/net_icon_20.png'))
 
+from pathlib import Path
+grandparent_dir = Path(__file__).resolve().parent.parent
+ethernet_icon = str(grandparent_dir) + '/icons/ethernet_icon_20.png'
+wifi_icon = str(grandparent_dir) + '/icons/wifi_icon_20.png'
+net_icon = str(grandparent_dir) + '/icons/net_icon_20.png'
 
 def oled_page_ips(oled):
     ips = get_ips()
@@ -23,13 +23,11 @@ def oled_page_ips(oled):
     i = 0
     for interface, ip in ips.items():
         if interface == 'eth0':
-            oled.draw_icon(ethernet_icon, 0, i*22, scale=1, invert=False)
-        elif interface == 'eth1':
-            oled.draw_icon(ethernet_icon, 0, i*22, scale=1, invert=False)
+            oled.draw_icon(ethernet_icon, 0, i*22, scale=1, invert=False,  dither=False, threshold=80)
         elif interface == 'wlan0':
-            oled.draw_icon(wifi_icon, 0, i*22, scale=1, invert=False)
+            oled.draw_icon(wifi_icon, 0, i*22, scale=1, invert=False, dither=False, threshold=85)
         else:
-            oled.draw_icon(net_icon, 0, i*22, scale=1, invert=False)
+            oled.draw_icon(net_icon, 0, i*22, scale=1, invert=False, dither=False, threshold=100)
 
         oled.draw_text(f'{ip}', 22, i * 22, size=14)
         i += 1

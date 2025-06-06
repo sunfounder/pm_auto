@@ -20,15 +20,16 @@ def oled_page_input(oled):
 
     oled.clear()
 
-    oled.draw_text('INPUT:', 0, 0, size=16)
+    if is_plugged:
+        oled.draw_icon(cable_plug_icon, 76, 12, scale=1, dither=False, threshold=127)
+    else:
+        oled.draw_icon(cable_unplug_icon, 76, 12, scale=1, dither=False, threshold=127)
+
+    oled.draw_text('INPUT', 0, 0, size=14)
     oled.draw_text(f'  {input_voltage:.3f} V', 0, 16, size=16)
     oled.draw_text(f'  {input_current:.3f} A', 0, 16*2, size=16)
     oled.draw_text(f'  {input_power:.3f} W', 0, 16*3, size=16)
 
-    if is_plugged:
-        oled.draw_icon(cable_plug_icon, 76, 12, scale=1)
-    else:
-        oled.draw_icon(cable_unplug_icon, 76, 12, scale=1)
 
     oled.display()
     
