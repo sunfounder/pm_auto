@@ -80,16 +80,28 @@ class PMAuto():
             self.log.debug("Initializing Pironman MCU service")
             from.services.pironman_mcu_service import PironmanMCUService
             self.pironman_mcu = PironmanMCUService(config, get_logger=get_logger)
-            self.pironman_mcu.set_on_wakeup(self.wake_oled)
+            self.pironman_mcu.set_on_wakeup(self.oled_button)
             self.pironman_mcu.set_on_shutdown(self.on_shutdown)
             self.log.debug("Pironman MCU service initialized")
+        if 'pi5_pwr_btn' in peripherals:
+            self.log.debug("Initializing Power button service")
+            from .services.pi5_pwr_btn_service import Pi5PwrBtn
+            self.pwr_btn = Pi5PwrBtn(grab=True)
+            self.pwr_btn.set_button_callback(self.oled_button)
+            self.pwr_btn.start()
+            self.log.debug("Power button service initialized")
 
         self.__on_state_changed__ = None
 
+    # @log_error
+    # def wake_oled(self):
+    #     self.log.info("Wake OLED")
+    #     self.oled.wake()
+    #     self.oled.button()
+
     @log_error
-    def wake_oled(self):
-        self.log.info("Wake OLED")
-        self.oled.wake()
+    def oled_button(self, button_state):
+        self.oled.set_button(button_state)    
 
     @log_error
     def on_shutdown(self, reason):
