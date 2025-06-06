@@ -58,11 +58,10 @@ class PironmanMCUService:
             self.log.error("PironmanMCUService is not ready")
             return
         while self.running:
-            wakeup_button = self.mcu.get_button_wakeup()
+            wakeup_button = self.mcu.get_button()
             shutdown_request = self.mcu.get_shutdown_request()
             if wakeup_button:
-                self.log.info("Button wakeup")
-                self.__on_wakeup__()
+                self.__on_wakeup__(wakeup_button)
             if shutdown_request != ShutdownReason.NONE:
                 self.log.info(f"Shutdown request {ShutdownReason(shutdown_request).name}")
                 self.__on_shutdown__(shutdown_request)
