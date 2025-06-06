@@ -42,6 +42,7 @@ class PMAuto():
         self.spc = None
         self.vibration_switch = None
         self.pironman_mcu = None
+        self.pwr_btn = None
 
         if 'oled' in peripherals:
             from .services.oled_service import OLEDService
@@ -88,7 +89,6 @@ class PMAuto():
             from .services.pi5_pwr_btn_service import Pi5PwrBtn
             self.pwr_btn = Pi5PwrBtn(grab=True)
             self.pwr_btn.set_button_callback(self.oled_button)
-            self.pwr_btn.start()
             self.log.debug("Power button service initialized")
 
         self.__on_state_changed__ = None
@@ -166,6 +166,8 @@ class PMAuto():
             self.vibration_switch.start()
         if self.pironman_mcu is not None:
             self.pironman_mcu.start()
+        if self.pwr_btn is not None:
+            self.pwr_btn.start()
 
         self.log.info("PM Auto Start")
 
@@ -183,5 +185,8 @@ class PMAuto():
             self.vibration_switch.stop()
         if self.pironman_mcu is not None:
             self.pironman_mcu.stop()
+        if self.pwr_btn is not None:
+            self.pwr_btn.stop()
+            
         self.log.info("PM Auto stoped")
 
