@@ -10,6 +10,16 @@ from .i2c import I2C
 # Pironman MCU I2C Address
 PM_MCU_I2C_ADDR = 0x6A
 
+BUTTON_MAP = {
+    0: 'released',
+    1: 'single_click',
+    2: 'double_click',
+    3: 'long_press_2s',
+    4: 'long_press_2s_released',
+    5: 'long_press_5s',
+    6: 'long_press_5s_released',
+}
+
 # Register Address
 class RegisterAddress(IntEnum):
     FIRMWARE_VERSION = 0x00
@@ -37,13 +47,16 @@ class PironmanMCU:
         patch = data & 0x07
         return (major, minor, patch)
 
-    def get_button_wakeup(self):
-        data = self.i2c.read_i2c_block_data(RegisterAddress.PWR_BTN, 1)[0]
-        if data == 1: 
-            self.i2c.write_byte_data(RegisterAddress.PWR_BTN, 0)
-            return True
-        return False
+    def get_button(self):
 
+        data = self.i2c.read_i2c_block_data(RegisterAddress.PWR_BTN, 1)[0]
+        self.i2c.write_byte_data(RegisterAddress.PWR_BTN, 0)
+
+        if data in BUTTON_MAP:
+            return BUTTON_MAP[data]
+        else:
+            return data
+    
     def get_shutdown_request(self):
         data = self.i2c.read_i2c_block_data(RegisterAddress.SHUTDOWN_REQ, 1)[0]
         if data!= 0:
