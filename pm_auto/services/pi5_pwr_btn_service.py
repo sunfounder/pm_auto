@@ -117,7 +117,7 @@ class Pi5PwrBtn:
         self.start_pwr_btn_watcher()
         while self.running:
             state = self.read()
-            if state != 'released':
+            if self._debug and state != 'released':
                 print(state)
             if self._button_callback is not None:
                 self._button_callback(state)
