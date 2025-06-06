@@ -337,8 +337,7 @@ class SSD1306():
         self.draw.pieslice((x-r, y-r, x+r, y+r), start=start, end=end, fill=0, outline=1)
         self.draw.pieslice((x-r, y-r, x+r, y+r), start=start, end=value_end, fill=1, outline=1)
 
-
-    def draw_icon(self, icon, x, y, scale=1.0, invert=False,  dither=True):
+    def draw_icon(self, icon, x, y, scale=1.0, invert=False,  dither=True, threshold=127):
         img = Image.open(icon)
 
         if img.mode != 'RGBA':
@@ -346,7 +345,6 @@ class SSD1306():
 
         # 缩放
         if scale != 1.0:
-            print("scale", scale)
             new_width = int(img.width * scale)
             new_height = int(img.height * scale)
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
@@ -357,6 +355,14 @@ class SSD1306():
         converted_img = Image.merge('RGBA', (white, white, white, a))
         background = Image.new('RGBA', img.size, (0, 0, 0, 255))
         final_img = Image.alpha_composite(background, converted_img)
+
+        if not dither:
+            # 直接阈值法（无抖动）
+            final_img = final_img.convert('L')  # 转换为灰度图
+            final_img = final_img.point(lambda p: 255 if p > threshold else 0)
+        else:
+            # 抖动算法（生成更平滑的黑白效果）
+            final_img = final_img.convert('1', dither=Image.Dither.FLOYDSTEINBERG)
 
         # 反转
         if invert:
