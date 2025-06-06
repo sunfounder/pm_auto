@@ -295,15 +295,20 @@ class SSD1306():
 
         self.image = Image.new('1', (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image)
-        self.font_path = str(resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf'))
+        # self.font_path = str(resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf'))
+        self.font_path = str(resource_files(__package_name__).joinpath('fonts/UbuntuSans-Regular.ttf'))
+
 
     def clear(self):
         self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
         self.oled.clear()
 
-    def draw_text(self, text, x, y, fill=1, align='left', size=8):
+    def draw_text(self, text, x, y, fill=1, align='left', size=8, font_path=None):
         text = str(text)
-        font = ImageFont.truetype(self.font_path, size)
+        if font_path is None:
+            font = ImageFont.truetype(self.font_path, size)
+        else:
+            font = ImageFont.truetype(font_path, size)
         text_width = font.getlength(text)
         if align == 'center':
             x -= text_width / 2
@@ -331,6 +336,35 @@ class SSD1306():
         value_end = int(start + (end-start) * percent / 100) * dir
         self.draw.pieslice((x-r, y-r, x+r, y+r), start=start, end=end, fill=0, outline=1)
         self.draw.pieslice((x-r, y-r, x+r, y+r), start=start, end=value_end, fill=1, outline=1)
+
+
+    def draw_icon(self, icon, x, y, scale=1.0, invert=False,  dither=True):
+        img = Image.open(icon)
+
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+
+        # 缩放
+        if scale != 1.0:
+            print("scale", scale)
+            new_width = int(img.width * scale)
+            new_height = int(img.height * scale)
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # 处理透明背景
+        r, g, b, a = img.split()
+        white = Image.new('L', img.size, 255)
+        converted_img = Image.merge('RGBA', (white, white, white, a))
+        background = Image.new('RGBA', img.size, (0, 0, 0, 255))
+        final_img = Image.alpha_composite(background, converted_img)
+
+        # 反转
+        if invert:
+                final_img = Image.eval(final_img, lambda x: 255 - x)
+
+        # 绘制到画布上
+        self.image.paste(final_img, (x, y), None)
+
 
     def display(self):
         image = self.image.rotate(self.rotation)
