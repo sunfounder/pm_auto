@@ -17,15 +17,6 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = [
-  'adafruit-circuitpython-neopixel-spi',
-  'smbus2',
-  'Pillow',
-  'gpiod',
-  'gpiozero',
-  'rpi.lgpio',
-]
-
 [tool.setuptools]
 packages = ["pm_auto"]
 
