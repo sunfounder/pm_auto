@@ -17,26 +17,13 @@ apt-get -y install python3 python3-pip python3-venv git
 apt-get -y install libfreetype6-dev libjpeg-dev libopenjp2-7
 # Create a virtual environment
 python3 -m venv venv
-# Install build
-pip3 install build
 
 # Clone the repository
 git clone https://github.com/sunfounder/pm_auto.git
 # Activate the virtual environment
 source venv/bin/activate
-# build the package
-python3 -m build
 # Install the package
-pip3 install dist/*.whl
-```
-
-it depends on influxdb, you can install it with the following command:
-
-```bash
-apt install influxdb
-systemctl unmask influxdb
-systemctl enable influxdb
-systemctl start influxdb
+pip3 install.
 ```
 
 ## Usage
