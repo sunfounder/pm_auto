@@ -81,7 +81,7 @@ class PMAuto():
             self.log.debug("Initializing Pironman MCU service")
             from.services.pironman_mcu_service import PironmanMCUService
             self.pironman_mcu = PironmanMCUService(config, get_logger=get_logger)
-            self.pironman_mcu.set_on_wakeup(self.oled_button)
+            self.pironman_mcu.set_on_button(self.oled_button)
             self.pironman_mcu.set_on_shutdown(self.on_shutdown)
             self.log.debug("Pironman MCU service initialized")
         if 'pi5_pwr_btn' in peripherals:
@@ -89,7 +89,10 @@ class PMAuto():
             from .services.pi5_pwr_btn_service import Pi5PwrBtn
             self.pwr_btn = Pi5PwrBtn(grab=True)
             self.pwr_btn.set_button_callback(self.oled_button)
+            self.pwr_btn.set_shutdown_callback(self.on_shutdown)
             self.log.debug("Power button service initialized")
+
+
 
         self.__on_state_changed__ = None
 
@@ -104,9 +107,22 @@ class PMAuto():
         self.oled.set_button(button_state)    
 
     @log_error
+    def clean_up(self):
+        if self.oled is not None and self.oled.is_ready():
+            self.oled.stop()
+        if self.ws2812 is not None and self.ws2812.is_ready():
+            self.ws2812.stop()
+        if self.fan is not None:
+            self.fan.stop()       
+
+    @log_error
     def on_shutdown(self, reason):
         self.log.info(f"Auto Shutdown reason: {reason}")
         self.oled.show_shutdown_screen(reason)
+        time.sleep(2)
+        self.clean_up()
+        from os import system
+        system("sudo shutdown now -h")
 
     @log_error
     def fan_enabled(self):

@@ -136,6 +136,11 @@ class OLEDService():
 
         while self.running:
 
+            if self.is_power_off == True:
+                oled_page_power_off(self.oled)
+                time.sleep(.5)
+                continue
+
             if self.button == 'single_click':
                 if not self.wake_flag:
                     self.log.info("OLED service waking up")
@@ -163,23 +168,6 @@ class OLEDService():
                     self.log.info("OLED sleep timeout, sleeping")
                     self.sleep()
                     continue
-
-            if self.is_power_off == True:
-                oled_page_power_off(self.oled)
-                
-            if self.button == 'long_press_2s':
-                oled_page_power_off(self.oled)
-
-                while True:
-                    print(self.button)
-                    if self.button == 'long_press_2s_released' or self.button == 'released':
-                        print("Power off")
-                        from os import system
-                        system('sudo poweroff')
-                        #
-                        self.wake_flag = False
-                        self.sleep()
-                    time.sleep(.05)
 
             time.sleep(.05)
 

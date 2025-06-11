@@ -26,7 +26,7 @@ class PironmanMCUService:
         except Exception as e:
             self.log.error(f"Failed to initialize PironmanMCU: {e}")
             return
-        self.__on_wakeup__ = lambda: None
+        self.__on_button__ = lambda: None
         self.__on_shutdown__ = lambda reason: None
         self.running = False
         self.thread = None
@@ -45,8 +45,8 @@ class PironmanMCUService:
         pass
 
     @log_error
-    def set_on_wakeup(self, on_wakeup):
-        self.__on_wakeup__ = on_wakeup
+    def set_on_button(self, on_button):
+        self.__on_button__ = on_button
 
     @log_error
     def set_on_shutdown(self, on_shutdown):
@@ -58,15 +58,13 @@ class PironmanMCUService:
             self.log.error("PironmanMCUService is not ready")
             return
         while self.running:
-            wakeup_button = self.mcu.get_button()
+            mcu_button = self.mcu.get_button()
             shutdown_request = self.mcu.get_shutdown_request()
-            if wakeup_button:
-                self.__on_wakeup__(wakeup_button)
+            if mcu_button:
+                self.__on_button__(mcu_button)
             if shutdown_request != ShutdownReason.NONE:
                 self.log.info(f"Shutdown request {ShutdownReason(shutdown_request).name}")
                 self.__on_shutdown__(shutdown_request)
-                time.sleep(3)
-                shutdown()
             time.sleep(INTERVAL)
 
     @log_error

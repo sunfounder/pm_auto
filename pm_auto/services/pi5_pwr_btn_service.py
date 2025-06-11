@@ -43,6 +43,7 @@ class Pi5PwrBtn:
         self._watch_thread = None
         self._process_thread = None
         self._button_callback = None
+        self._shutdown_callback = None
         self.running = False
         self._debug = debug
 
@@ -113,6 +114,9 @@ class Pi5PwrBtn:
     def set_button_callback(self, callback):
         self._button_callback = callback
 
+    def set_shutdown_callback(self, callback):
+        self._shutdown_callback = callback
+
     def process_loop(self):
         self.start_pwr_btn_watcher()
         while self.running:
@@ -121,6 +125,8 @@ class Pi5PwrBtn:
                 print(state)
             if self._button_callback is not None:
                 self._button_callback(state)
+            if self._shutdown_callback is not None and state == 'long_press_2s':
+                self._shutdown_callback('button')
             time.sleep(self.READ_INTERVAL)
 
     def start(self):
