@@ -6,7 +6,6 @@ from .utils import has_common_items, log_error
 
 from .fan_control import FanControl, FANS
 from .vibration_switch import VibrationSwitch
-from .oled import OLED
 
 app_name = 'pm_auto'
 
@@ -46,6 +45,7 @@ class PMAuto():
         self.spc = None
         self.vibration_switch = None
         if 'oled' in peripherals:
+            from .oled import OLED
             self.log.debug("Initializing OLED")
             self.oled = OLED(config, get_logger=get_logger)
             if not self.oled.is_ready():
