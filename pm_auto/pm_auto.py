@@ -4,9 +4,6 @@ from sf_rpi_status import shutdown
 
 from .utils import has_common_items, log_error
 
-from .fan_control import FanControl, FANS
-from .vibration_switch import VibrationSwitch
-
 app_name = 'pm_auto'
 
 DEFAULT_CONFIG = {
@@ -62,10 +59,12 @@ class PMAuto():
                 self.ws2812.start()
         # if FANS in peripherals:
         if self.fan_enabled() or 'spc' in peripherals:
+            from .fan_control import FanControl
             self.fan = FanControl(config, fans=peripherals, get_logger=get_logger)
         if 'spc' in peripherals:
             self.spc = SPCAuto(get_logger=get_logger)
         if 'vibration_switch' in peripherals:
+            from .vibration_switch import VibrationSwitch
             self.vibration_switch = VibrationSwitch(config, get_logger=get_logger)
             self.vibration_switch.set_on_vabration_detected(self.on_vabration_detected)
 
@@ -83,6 +82,7 @@ class PMAuto():
 
     @log_error
     def fan_enabled(self):
+        from .fan_control import FANS
         return has_common_items(FANS, self.peripherals)
 
     @log_error
