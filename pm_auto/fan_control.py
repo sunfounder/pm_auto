@@ -2,7 +2,7 @@ import logging
 import subprocess
 import os
 
-from .utils import run_command, log_error
+from .utils import run_command, log_error, softlink_gpiochip0_to_gpiochip4
 
 default_config = {
     "gpio_fan_pin": 6,
@@ -230,6 +230,10 @@ class GPIOFan(Fan):
 
         try:
             import gpiozero
+            
+            # Fix gpiozero reads gpiochip4 while new kernel changed to gpiochip0
+            softlink_gpiochip0_to_gpiochip4()
+
             self.pin = pin
             self.fan = gpiozero.DigitalOutputDevice(pin)
             self.led = None

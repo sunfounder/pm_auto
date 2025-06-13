@@ -1,5 +1,4 @@
-from gpiozero import DigitalInputDevice
-from .utils import log_error
+from .utils import log_error, softlink_gpiochip0_to_gpiochip4
 
 class VibrationSwitch:
     def __init__(self, config, get_logger=None):
@@ -46,16 +45,24 @@ class VibrationSwitch:
 
     @log_error
     def init_gpio(self):
-        if self.device is not None:
-            self.device.close()
-            self.device = None
-        if self.pin is None:
+        from gpiozero import DigitalInputDevice
+        try:
+            # Fix gpiozero reads gpiochip4 while new kernel changed to gpiochip0
+            softlink_gpiochip0_to_gpiochip4()
+
+            if self.device is not None:
+                self.device.close()
+                self.device = None
+            if self.pin is None:
+                return False
+            self.log.info(f"Initializing VibrationSwitch on pin {self.pin} with pull_up={self.pull_up}")
+            self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up)
+            if self.when_activated is not None:
+                self.device.when_activated = self.when_activated
+            return True
+        except Exception as e:
+            self.log.error(f"Failed to initialize VibrationSwitch: {e}")
             return False
-        self.log.info(f"Initializing VibrationSwitch on pin {self.pin} with pull_up={self.pull_up}")
-        self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up)
-        if self.when_activated is not None:
-            self.device.when_activated = self.when_activated
-        return True
 
     @log_error
     def set_on_vabration_detected(self, func):
