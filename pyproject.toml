@@ -26,6 +26,7 @@ dependencies = [
   'gpiod',
   'gpiozero',
   'rpi.lgpio',
+  'watchdog',
 ]
 
 [tool.setuptools]
@@ -33,7 +34,8 @@ packages = [
   "pm_auto",
   "pm_auto.libs",
   "pm_auto.services",
-  "pm_auto.oled_page",
+  "pm_auto.oled_pages",
+  "pm_auto.rgb_matrix_effects",
   ]
 
 [project.urls]
