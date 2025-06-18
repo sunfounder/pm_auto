@@ -5,7 +5,6 @@
 #
 import threading
 import time
-from enum import IntEnum
 
 from ..libs.utils import log_error
 from ..libs.pironman_mcu import PironmanMCU, ShutdownReason

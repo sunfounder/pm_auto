@@ -1,5 +1,7 @@
 import time
 import threading
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 from .libs.utils import has_common_items, log_error
 
@@ -26,6 +28,11 @@ DEFAULT_CONFIG = {
     'vibration_switch_pull_up': False,
 }
 
+# class FileChangeHandler(FileSystemEventHandler, ):
+#     def on_modified(self, event):
+#         if event.src_path.endswith("notify.flag"):
+#             print("程序B：检测到变更！")
+
 class PMAuto():
     @log_error
     def __init__(self, config=DEFAULT_CONFIG, peripherals=[], get_logger=None):
@@ -42,7 +49,9 @@ class PMAuto():
         self.spc = None
         self.vibration_switch = None
         self.pironman_mcu = None
-        self.pwr_btn = None
+        self.pi5_pwr_btn = None
+        self.rgb_matrix = None
+        self.pipower5 = None
 
         if 'oled' in peripherals:
             from .services.oled_service import OLEDService
@@ -66,11 +75,11 @@ class PMAuto():
             from .services.fan_service import FanService
             self.fan = FanService(config, fans=peripherals, get_logger=get_logger)
             self.log.debug("Fan service initialized")
-        if 'spc' in peripherals:
-            self.log.debug("Initializing SPC service")
-            from .services.spc_service import SPCService
-            self.spc = SPCService(get_logger=get_logger)
-            self.log.debug("SPC service initialized")
+        # if 'spc' in peripherals:
+        #     self.log.debug("Initializing SPC service")
+        #     from .services.spc_service import SPCService
+        #     self.spc = SPCService(get_logger=get_logger)
+        #     self.log.debug("SPC service initialized")
         if 'vibration_switch' in peripherals:
             self.log.debug("Initializing Vibration switch service")
             from .services.vibration_switch_service import VibrationSwitchService
@@ -87,20 +96,30 @@ class PMAuto():
         if 'pi5_pwr_btn' in peripherals:
             self.log.debug("Initializing Power button service")
             from .services.pi5_pwr_btn_service import Pi5PwrBtn
-            self.pwr_btn = Pi5PwrBtn(grab=True)
-            self.pwr_btn.set_button_callback(self.oled_button)
-            self.pwr_btn.set_shutdown_callback(self.on_shutdown)
+            self.pi5_pwr_btn = Pi5PwrBtn(grab=True)
+            self.pi5_pwr_btn.set_button_callback(self.oled_button)
+            self.pi5_pwr_btn.set_shutdown_callback(self.on_shutdown)
             self.log.debug("Power button service initialized")
-
-
+        if 'rgb_matrix' in peripherals:
+            self.log.debug("Initializing RGB Matrix service")
+            from .services.rgb_matrix_service import RGBMatrixService
+            self.rgb_matrix = RGBMatrixService(config, get_logger=get_logger)
+            self.log.debug("RGB Matrix service initialized")
+        if 'pipower5' in peripherals:
+            self.log.debug("Initializing PiPower5 service")
+            from .services.pipower5_service import PiPower5Service
+            self.pipower5 = PiPower5Service()
+            self.pipower5.set_button_callback(self.oled_button)
+            self.pipower5.set_shutdown_callback(self.on_shutdown)
+            self.log.debug("PiPower5 service initialized")
 
         self.__on_state_changed__ = None
 
-    # @log_error
-    # def wake_oled(self):
-    #     self.log.info("Wake OLED")
-    #     self.oled.wake()
-    #     self.oled.button()
+    @log_error
+    def wake_oled(self):
+        self.log.info("Wake OLED")
+        self.oled.wake()
+        self.oled.button()
 
     @log_error
     def oled_button(self, button_state):
@@ -113,16 +132,29 @@ class PMAuto():
         if self.ws2812 is not None and self.ws2812.is_ready():
             self.ws2812.stop()
         if self.fan is not None:
-            self.fan.stop()       
+            self.fan.stop()   
+        if self.spc is not None and self.spc.is_ready():
+            self.spc.stop()
+        if self.vibration_switch is not None:
+            self.vibration_switch.stop()
+        if self.pironman_mcu is not None:
+            self.pironman_mcu.stop()
+        if self.pi5_pwr_btn is not None:
+            self.pi5_pwr_btn.stop()
+        if self.rgb_matrix is not None:
+            self.rgb_matrix.stop()
+        if self.pipower5 is not None:
+            self.pipower5.stop()
 
     @log_error
     def on_shutdown(self, reason):
-        self.log.info(f"Auto Shutdown reason: {reason}")
-        self.oled.show_shutdown_screen(reason)
-        time.sleep(2)
-        self.clean_up()
-        from os import system
-        system("sudo shutdown now -h")
+        if reason != 'None' or reason != None or reason != 0:
+            self.log.info(f"Auto Shutdown reason: {reason}")
+            self.oled.show_shutdown_screen(reason)
+            time.sleep(2)
+            self.clean_up()
+            from os import system
+            system("sudo shutdown now -h")
 
     @log_error
     def fan_enabled(self):
@@ -182,8 +214,12 @@ class PMAuto():
             self.vibration_switch.start()
         if self.pironman_mcu is not None:
             self.pironman_mcu.start()
-        if self.pwr_btn is not None:
-            self.pwr_btn.start()
+        if self.pi5_pwr_btn is not None:
+            self.pi5_pwr_btn.start()
+        if self.rgb_matrix is not None:
+            self.rgb_matrix.start()
+        if self.pipower5 is not None:
+            self.pipower5.start()
 
         self.log.info("PM Auto Start")
 
@@ -201,8 +237,12 @@ class PMAuto():
             self.vibration_switch.stop()
         if self.pironman_mcu is not None:
             self.pironman_mcu.stop()
-        if self.pwr_btn is not None:
-            self.pwr_btn.stop()
+        if self.pi5_pwr_btn is not None:
+            self.pi5_pwr_btn.stop()
+        if self.rgb_matrix is not None:
+            self.rgb_matrix.stop()
+        if self.pipower5 is not None:
+            self.pipower5.stop()
             
         self.log.info("PM Auto stoped")
 

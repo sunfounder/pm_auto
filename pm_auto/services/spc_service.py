@@ -42,12 +42,12 @@ class SPCService():
         if shutdown_request != self.shutdown_request:
             self.shutdown_request = shutdown_request
             self.log.debug(f"Shutdown request: {shutdown_request}")
-        if shutdown_request in self.spc.SHUTDOWN_REQUESTS:
-            if shutdown_request == self.spc.SHUTDOWN_REQUEST_LOW_POWER:
-                self.log.info('Low power shutdown.')
-            elif shutdown_request == self.spc.SHUTDOWN_REQUEST_BUTTON:
-                self.log.info('Button shutdown.')
-            shutdown()
+        # if shutdown_request in self.spc.SHUTDOWN_REQUESTS:
+        #     if shutdown_request == self.spc.SHUTDOWN_REQUEST_LOW_POWER:
+        #         self.log.info('Low power shutdown.')
+        #     elif shutdown_request == self.spc.SHUTDOWN_REQUEST_BUTTON:
+        #         self.log.info('Button shutdown.')
+        #     shutdown()
 
     @log_error
     def handle_external_input(self):

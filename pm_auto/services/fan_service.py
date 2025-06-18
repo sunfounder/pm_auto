@@ -204,8 +204,8 @@ class FanService:
             self.gpio_fan.off()
         if self.spc_fan.is_ready():
             self.spc_fan.off()
-        if self.pwm_fan.is_ready():
-            self.pwm_fan.off()
+        # if self.pwm_fan.is_ready():
+        #     self.pwm_fan.off()
 
     @log_error
     def close(self):

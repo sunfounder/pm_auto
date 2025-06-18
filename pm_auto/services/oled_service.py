@@ -115,15 +115,21 @@ class OLEDService():
 
     @log_error
     def loop(self):
-        from ..oled_page.ips import oled_page_ips
-        from ..oled_page.disk import oled_page_disk
-        from ..oled_page.performance import oled_page_performance
-        from ..oled_page.power_off import oled_page_power_off
+        from ..oled_pages.ips import oled_page_ips
+        from ..oled_pages.disk import oled_page_disk
+        from ..oled_pages.performance import oled_page_performance
+        from ..oled_pages.power_off import oled_page_power_off
+        from ..oled_pages.battery import oled_page_battery
+        from ..oled_pages.input import oled_page_input
+        from ..oled_pages.output import oled_page_output
 
         page = [
             oled_page_performance,
             oled_page_ips,
             oled_page_disk,
+            oled_page_battery,
+            oled_page_input,
+            oled_page_output,
             ]
     
         page_index = 0

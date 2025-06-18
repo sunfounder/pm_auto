@@ -137,7 +137,7 @@ class Pi5PwrBtn:
 
     def stop(self):
         self.running = False
-        self._process_thread.join()
+        # self._process_thread.join()
     
     
 if __name__ == '__main__':
