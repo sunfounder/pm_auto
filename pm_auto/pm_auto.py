@@ -65,16 +65,16 @@ class PMAuto():
             else:
                 self.log.debug("WS2812 service initialized")
         # if FANS in peripherals:
-        if self.fan_enabled() or 'spc' in peripherals:
+        if self.is_fan_enabled() or 'spc' in peripherals:
             self.log.debug("Initializing Fan service")
             from .services.fan_service import FanService
             self.fan = FanService(config, fans=peripherals, get_logger=get_logger)
             self.log.debug("Fan service initialized")
-        # if 'spc' in peripherals:
-        #     self.log.debug("Initializing SPC service")
-        #     from .services.spc_service import SPCService
-        #     self.spc = SPCService(get_logger=get_logger)
-        #     self.log.debug("SPC service initialized")
+        if 'spc' in peripherals:
+            self.log.debug("Initializing SPC service")
+            from .services.spc_service import SPCService
+            self.spc = SPCService(get_logger=get_logger)
+            self.log.debug("SPC service initialized")
         if 'vibration_switch' in peripherals:
             self.log.debug("Initializing Vibration switch service")
             from .services.vibration_switch_service import VibrationSwitchService
@@ -100,24 +100,21 @@ class PMAuto():
             from .services.rgb_matrix_service import RGBMatrixService
             self.rgb_matrix = RGBMatrixService(config, get_logger=get_logger)
             self.log.debug("RGB Matrix service initialized")
-        if 'pipower5' in peripherals:
-            self.log.debug("Initializing PiPower5 service")
-            from .services.pipower5_service import PiPower5Service
-            self.pipower5 = PiPower5Service()
-            self.pipower5.set_button_callback(self.oled_button)
-            self.pipower5.set_shutdown_callback(self.on_shutdown)
-            self.log.debug("PiPower5 service initialized")
 
         self.__on_state_changed__ = None
 
     @log_error
     def wake_oled(self):
+        if self.oled is None or not self.oled.is_ready():
+            return
         self.log.info("Wake OLED")
         self.oled.wake()
         self.oled.button()
 
     @log_error
     def oled_button(self, button_state):
+        if self.oled is None or not self.oled.is_ready():
+            return
         self.oled.set_button(button_state)    
 
     @log_error
@@ -152,7 +149,7 @@ class PMAuto():
             system("sudo shutdown now -h")
 
     @log_error
-    def fan_enabled(self):
+    def is_fan_enabled(self):
         from .services.fan_service import FANS
         return has_common_items(FANS, self.peripherals)
 
@@ -188,7 +185,7 @@ class PMAuto():
             self.oled.update_config(config)
         if 'ws2812' in self.peripherals:
             self.ws2812.update_config(config)
-        if self.fan_enabled():
+        if self.is_fan_enabled():
             self.fan.update_config(config)
         if 'vibration_switch' in self.peripherals:
             self.vibration_switch.update_config(config)
