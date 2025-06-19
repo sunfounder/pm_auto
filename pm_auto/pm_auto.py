@@ -46,7 +46,6 @@ class PMAuto():
         self.pironman_mcu = None
         self.pi5_pwr_btn = None
         self.rgb_matrix = None
-        self.pipower5 = None
 
         if 'oled' in peripherals:
             from .services.oled_service import OLEDService
@@ -137,8 +136,7 @@ class PMAuto():
             self.pi5_pwr_btn.stop()
         if self.rgb_matrix is not None:
             self.rgb_matrix.stop()
-        if self.pipower5 is not None:
-            self.pipower5.stop()
+
 
     @log_error
     def on_shutdown(self, reason):
