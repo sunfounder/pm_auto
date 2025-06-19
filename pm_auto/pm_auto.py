@@ -74,6 +74,8 @@ class PMAuto():
             self.log.debug("Initializing SPC service")
             from .services.spc_service import SPCService
             self.spc = SPCService(get_logger=get_logger)
+            self.spc.set_button_callback(self.oled_button)
+            self.spc.set_shutdown_callback(self.on_shutdown)
             self.log.debug("SPC service initialized")
         if 'vibration_switch' in peripherals:
             self.log.debug("Initializing Vibration switch service")
@@ -100,7 +102,7 @@ class PMAuto():
             from .services.rgb_matrix_service import RGBMatrixService
             self.rgb_matrix = RGBMatrixService(config, get_logger=get_logger)
             self.log.debug("RGB Matrix service initialized")
-
+            
         self.__on_state_changed__ = None
 
     @log_error
@@ -145,8 +147,15 @@ class PMAuto():
             self.oled.show_shutdown_screen(reason)
             time.sleep(2)
             self.clean_up()
-            from os import system
-            system("sudo shutdown now -h")
+
+            try:
+                from sf_rpi_status import shutdown
+                shutdown()
+            except Exception as e:
+                self.log.error(f"Failed to shutdown: {e}")
+                from os import system
+                system("sudo shutdown -h now")
+
 
     @log_error
     def is_fan_enabled(self):
@@ -210,8 +219,6 @@ class PMAuto():
             self.pi5_pwr_btn.start()
         if self.rgb_matrix is not None:
             self.rgb_matrix.start()
-        if self.pipower5 is not None:
-            self.pipower5.start()
 
         self.log.info("PM Auto Start")
 
@@ -233,8 +240,6 @@ class PMAuto():
             self.pi5_pwr_btn.stop()
         if self.rgb_matrix is not None:
             self.rgb_matrix.stop()
-        if self.pipower5 is not None:
-            self.pipower5.stop()
             
         self.log.info("PM Auto stoped")
 

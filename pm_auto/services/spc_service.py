@@ -1,9 +1,29 @@
 from ..libs.utils import log_error
-from sf_rpi_status import shutdown
 import time
 import threading
 
+BUTTON_MAP = {
+    0: 'released',
+    1: 'single_click',
+    2: 'double_click',
+    3: 'long_press_2s',
+    4: 'long_press_2s_released',
+    5: 'long_press_5s',
+    6: 'long_press_5s_released',
+}
+
+SHUTDOWN_REQUEST_MAP = {
+    0: 'none',
+    1: 'low_battery',
+    2: 'button',
+}
+
 class SPCService():
+    LOOP_INTERVAL = 0.1 # 100ms
+
+    REG_PWR_BTN_STATE= 154
+    REG_WRITE_POWER_BTN_STATE = 12
+
     @log_error
     def __init__(self, get_logger=None):
         if get_logger is None:
@@ -19,11 +39,10 @@ class SPCService():
             return
 
         self._is_ready = True
-        self.shutdown_request = 0
-        self.is_plugged_in = False
-        self.interval = 1
         self.running = False
-        self.thread = None
+        self._thread = None
+        self._button_callback = None
+        self._shutdown_callback = None
 
     @log_error
     def is_ready(self):
@@ -34,70 +53,62 @@ class SPCService():
         self.log.setLevel(level)
 
     @log_error
-    def handle_shutdown(self):
-        if self.spc is None or not self.spc.is_ready():
-            return
-
-        shutdown_request = self.spc.read_shutdown_request()
-        if shutdown_request != self.shutdown_request:
-            self.shutdown_request = shutdown_request
-            self.log.debug(f"Shutdown request: {shutdown_request}")
-        # if shutdown_request in self.spc.SHUTDOWN_REQUESTS:
-        #     if shutdown_request == self.spc.SHUTDOWN_REQUEST_LOW_POWER:
-        #         self.log.info('Low power shutdown.')
-        #     elif shutdown_request == self.spc.SHUTDOWN_REQUEST_BUTTON:
-        #         self.log.info('Button shutdown.')
-        #     shutdown()
+    def set_button_callback(self, callback):
+        self._button_callback = callback
 
     @log_error
-    def handle_external_input(self):
-        if self.spc is None or not self.spc.is_ready():
-            return
+    def set_shutdown_callback(self, callback):
+        self._shutdown_callback = callback
 
-        if 'external_input' not in self.spc.device.peripherals:
-            return
+    @log_error
+    def read_power_btn(self):
+        val = self.spc.i2c.read_byte_data(self.REG_PWR_BTN_STATE)
+        self.spc.i2c.write_byte_data(self.REG_WRITE_POWER_BTN_STATE, 0) # reset state
 
-        if 'battery' not in self.spc.device.peripherals:
-            return
-
-        is_plugged_in = self.spc.read_is_plugged_in()
-        if is_plugged_in != self.is_plugged_in:
-            self.is_plugged_in = is_plugged_in
-            if is_plugged_in == True:
-                self.log.info(f"External input plug in")
-            else:
-                self.log.info(f"External input unplugged")
-        if is_plugged_in == False:
-            shutdown_pct = self.spc.read_shutdown_battery_pct()
-            current_pct= self.spc.read_battery_percentage()
-            if current_pct < shutdown_pct:
-                self.log.info(f"Battery is below {shutdown_pct}, shutdown!", level="INFO")
-                shutdown()
+        if val in BUTTON_MAP:
+            return BUTTON_MAP[val]
+        else:
+            return val
+              
+    @log_error
+    def read_shutdown_request(self):
+        val = self.spc.read_shutdown_request()
+        if val in SHUTDOWN_REQUEST_MAP:
+            return SHUTDOWN_REQUEST_MAP[val]
+        else:
+            return val
 
     @log_error
     def loop(self):
         if self.spc is None or not self.spc.is_ready():
             return
         while self.running:
-            self.handle_external_input()
-            self.handle_shutdown()
-            time.sleep(self.interval)
+            button_status = self.read_power_btn()
+            shutdown_request = self.read_shutdown_request()
+
+            if self._button_callback is not None:
+                self._button_callback(button_status)
+
+            if self._shutdown_callback is not None:
+                if button_status == 'long_press_2s':
+                    self._shutdown_callback('button')
+                elif shutdown_request == 'low_battery':
+                    self._shutdown_callback('low battery')
+                elif shutdown_request == 'button':
+                    self._shutdown_callback('button')
+
+            time.sleep(self.LOOP_INTERVAL)
 
     @log_error
     def start(self):
-        if self.thread is not None:
+        if self._thread is not None:
             self.log.warning("Already running")
             return
         self.running = True
-        self.thread = threading.Thread(target=self.loop, daemon=True)
+        self._thread = threading.Thread(target=self.loop, daemon=True)
         self.log.info("SPC Service Start")
-        self.thread.start()
+        self._thread.start()
 
     def stop(self):
-        if self.thread is not None:
-            self.running = False
-            self.thread.join(timeout=5)
-            if self.thread.is_alive():
-                self.log.warning("Thread termination timeout")
-            self.thread = None
+        self.running = False
         self.log.info("SPC Service Stop")
