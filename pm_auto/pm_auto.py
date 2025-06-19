@@ -21,17 +21,12 @@ DEFAULT_CONFIG = {
     'oled_sleep': False,
     'oled_sleep_timeout': 10,
     'temperature_unit': 'C',
-    'gpio_fan_mode': 1,
-    'gpio_fan_led_pin': 5,
-    "gpio_fan_pin": 6,
-    'vibration_switch_pin': 26,
-    'vibration_switch_pull_up': False,
+    'oled_pages': [
+        'performance',
+        'ips',
+        'disk',
+    ],
 }
-
-# class FileChangeHandler(FileSystemEventHandler, ):
-#     def on_modified(self, event):
-#         if event.src_path.endswith("notify.flag"):
-#             print("程序B：检测到变更！")
 
 class PMAuto():
     @log_error
