@@ -19,12 +19,13 @@ class PironmanMCUService:
             get_logger = logging.getLogger
         self.log = get_logger(__name__)
         self._is_ready = False
+        self.mcu = None
         try:
             self.mcu = PironmanMCU()
             self._is_ready = True
         except Exception as e:
             self.log.error(f"Failed to initialize PironmanMCU: {e}")
-            return
+
         self.__on_button__ = lambda: None
         self.__on_shutdown__ = lambda reason: None
         self.running = False
@@ -80,5 +81,5 @@ class PironmanMCUService:
         if self.running:
             self.running = False
             self.thread.join()
-        if self.mcu is not None:
+        if self.mcu is not None and self._is_ready:
             self.mcu.close()

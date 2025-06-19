@@ -8,7 +8,7 @@ from enum import IntEnum
 from .i2c import I2C
 
 # Pironman MCU I2C Address
-PM_MCU_I2C_ADDR = 0x6A
+PM_MCU_I2C_ADDR = [0x6A]
 
 BUTTON_MAP = {
     0: 'released',
@@ -38,7 +38,18 @@ class ShutdownReason(IntEnum):
 
 class PironmanMCU:
     def __init__(self):
-        self.i2c = I2C(PM_MCU_I2C_ADDR)
+        _addr_list = I2C.scan()
+        self.addr = PM_MCU_I2C_ADDR[0]
+        for _addr in _addr_list:
+            if _addr in PM_MCU_I2C_ADDR:
+                self.addr = _addr
+                break
+        else:
+            self.addr = PM_MCU_I2C_ADDR[0]
+            _addr_list_str = [f'0x{_addr:02X}' for _addr in PM_MCU_I2C_ADDR]
+            raise IOError(f"Pironman MCU I2C address not found in {_addr_list_str}")
+
+        self.i2c = I2C(self.addr)
 
     def get_firmware_version(self):
         data = self.i2c.read_i2c_block_data(RegisterAddress.FIRMWARE_VERSION, 1)[0]
