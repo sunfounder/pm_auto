@@ -22,7 +22,8 @@ FANS = [
     'gpio_fan_led',
     'spc_fan_power'
 ]
-# 5个风扇驱动等级，从高到低
+
+# 5 levels of fan speed, from high to low
 GPIO_FAN_MODES = ['Always On', 'Performance', 'Cool', 'Balanced', 'Quiet']
 FAN_LEVELS = [
     {
