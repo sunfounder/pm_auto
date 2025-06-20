@@ -25,7 +25,7 @@ def oled_page_disk(oled, config):
     oled.clear()
 
     if len(disks_info) == 0:
-        oled.draw_icon(error, 0, 0, scale=1, invert=False, dither=False, threshold=50)
+        oled.draw_icon(error, 53, 0, scale=1, invert=False, dither=False, threshold=50)
         oled.draw_text('Disk Detection Error', 0, 22, size=14)
     else:
         if disk_num != len(disks_info):

@@ -24,8 +24,8 @@ def oled_page_ips(oled, config):
     oled.clear()
 
     if len(ips) == 0:
-        oled.draw_icon(error, 0, 0, scale=1, invert=False, dither=False, threshold=50)
-        oled.draw_text('DISCONNECTED', 22, 0, size=14)
+        oled.draw_icon(error, 53, 0, scale=1, invert=False, dither=False, threshold=50)
+        oled.draw_text('DISCONNECTED', 14, 22, size=14)
     else:
         if ip_num != len(ips):
             ip_index = 0
