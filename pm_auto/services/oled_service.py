@@ -191,6 +191,8 @@ class OLEDService():
             self.log.error("OLED service not ready")
             return
 
+        self.wake_start_time = time.time()
+
         while self.running:
 
             if self.is_power_off == True:
@@ -226,7 +228,7 @@ class OLEDService():
                     last_refresh_time = time.time()
                     pages[page_index](self.oled, self.config)
 
-                if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout:
+                if time.time() - self.wake_start_time > self.sleep_timeout:
                     self.log.debug("OLED sleep timeout, sleeping")
                     self.sleep()
                     continue
