@@ -5,23 +5,24 @@ from ..libs.utils import log_error
 import time
 import threading
 
-INTERVAL = 1
-
 OLED_DEFAULT_CONFIG = {
-    'temperature_unit': 'C',
     'oled_enable': True,
-    'oled_rotation': 0,
-    'oled_disk': 'total',  # 'total' or the name of the disk, normally 'mmcblk0' for SD Card, 'nvme0n1' for NVMe SSD
-    'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
-    'oled_sleep_timeout': 10,
+    'oled_rotation': 0, # 0, 90, 180, 270 degrees
+    'scroll_interval': 3,  # seconds, how often to scroll the content
+    'oled_sleep_timeout': 10, # seconds, how long to wait before going to sleep
+    'temperature_unit': 'C', # 'C' for Celsius, 'F' for Fahrenheit
     'oled_pages': [
+        'mix',
         'performance',
         'ips',
         'disk',
     ]
 }
-
 class OLEDService():
+    REFRESH_INTERVAL = 1 # seconds, how often to refresh the display
+    MIN_SLEEP_TIMEOUT = 5 # 5s, minimum sleep timeout
+    MAX_SLEEP_TIMEOUT = 3600 # 600s, 10min, maximum sleep timeout
+
     @log_error
     def __init__(self, config, get_logger=None):
         if get_logger is None:
@@ -37,12 +38,14 @@ class OLEDService():
             return
         self._is_ready = self.oled.is_ready()
 
-        self.temperature_unit = OLED_DEFAULT_CONFIG['temperature_unit']
-        self.disk_mode = OLED_DEFAULT_CONFIG['oled_disk']
-        self.ip_interface = OLED_DEFAULT_CONFIG['oled_network_interface']
-        self.sleep_timeout = OLED_DEFAULT_CONFIG['oled_sleep_timeout']
-        self.enable = OLED_DEFAULT_CONFIG['oled_enable']
-        self.oled_pages = OLED_DEFAULT_CONFIG['oled_pages']
+        self.config = OLED_DEFAULT_CONFIG.copy()
+        self.update_config(config)
+
+        self.enable = self.config['oled_enable']
+        self.rotation = self.config['oled_rotation']
+        self.sleep_timeout = self.config['oled_sleep_timeout']
+        self.oled_pages = self.config['oled_pages']
+
         self.wake_flag = True
         self.button = False
         self.wake_start_time = 0
@@ -50,41 +53,47 @@ class OLEDService():
         self.running = False
         self.thread = None
 
-        self.update_config(config)
-
     @log_error
     def set_debug_level(self, level):
         self.log.setLevel(level)
 
     @log_error
     def update_config(self, config):
-        if "temperature_unit" in config:
-            if config['temperature_unit'] not in ['C', 'F']:
-                self.log.error("Invalid temperature unit")
-                return
-            self.log.debug(f"Update temperature_unit to {config['temperature_unit']}")
-            self.temperature_unit = config['temperature_unit']
-        if "oled_rotation" in config:
-            self.log.debug(f"Update oled_rotation to {config['oled_rotation']}")
-            self.set_rotation(config['oled_rotation'])
-        if "oled_disk" in config:
-            self.log.debug(f"Update oled_disk to {config['oled_disk']}")
-            self.disk_mode = config['oled_disk']
-        if "oled_network_interface" in config:
-            self.log.debug(f"Update oled_network_interface to {config['oled_network_interface']}")
-            self.ip_interface = config['oled_network_interface']
-        if "oled_sleep_timeout" in config:
-            self.log.debug(f"Update oled_sleep_timeout to {config['oled_sleep_timeout']}")
-            self.sleep_timeout = config['oled_sleep_timeout']
         if "oled_enable" in config:
-            self.log.debug(f"Update oled_enable to {config['oled_enable']}")
-            if config['oled_enable']:
+            _enable = bool(config['oled_enable'])
+            self.config['oled_enable'] = _enable
+            self.log.debug(f"Update oled_enable to {_enable}")
+            if _enable:
                 self.wake()
             else:
                 self.sleep()
+        if "oled_rotation" in config:
+            _rotation = int(config['oled_rotation'])
+            if _rotation not in [0, 90, 180, 270]:
+                self.log.error("Invalid rotation value, must be 0, 90, 180, or 270")
+            else:
+                self.config['oled_rotation'] = _rotation
+                self.log.debug(f"Update oled_rotation to {_rotation}")
+        if "scroll_interval" in config:
+            self.config['scroll_interval'] = config['scroll_interval']
+            self.log.debug(f"Update scroll_interval to {config['scroll_interval']}")
+        if "oled_sleep_timeout" in config:
+            _timeout = int(config['oled_sleep_timeout'])
+            if _timeout < self.MIN_SLEEP_TIMEOUT or _timeout > self.MAX_SLEEP_TIMEOUT:
+                self.log.error(f"Invalid sleep timeout value, must be between {self.MIN_SLEEP_TIMEOUT} and {self.MAX_SLEEP_TIMEOUT}")
+            else:
+                self.config['oled_sleep_timeout'] = _timeout
+                self.log.debug(f"Update oled_sleep_timeout to {_timeout}")
+        if "temperature_unit" in config:
+            _unit = config['temperature_unit']
+            if _unit not in ['C', 'F']:
+                self.log.error("Invalid temperature unit, must be 'C' or 'F'")
+            else:
+                self.config['temperature_unit'] = _unit
+                self.log.debug(f"Update temperature_unit to {_unit}")
         if "oled_pages" in config:
+            self.config['oled_pages'] = config['oled_pages']
             self.log.debug(f"Update oled_pages to {config['oled_pages']}")
-            self.oled_pages = config['oled_pages']
 
     @log_error
     def set_rotation(self, rotation):
@@ -132,7 +141,7 @@ class OLEDService():
                     self.log.error(f"Failed to import oled_page_ips: {e}")
             elif page_name == 'disk':
                 try:
-                    from ..oled_pages.disk import oled_page_disk
+                    from ..oled_pages.disks import oled_page_disk
                     pages.append(oled_page_disk)
                 except Exception as e:
                     self.log.error(f"Failed to import oled_page_disk: {e}")
@@ -154,7 +163,13 @@ class OLEDService():
                     pages.append(oled_page_output)
                 except Exception as e:
                     self.log.error(f"Failed to import oled_page_output: {e}")
-        
+            elif page_name == 'mix':
+                try:
+                    from ..oled_pages.mix import oled_page_mix
+                    pages.append(oled_page_mix)
+                except Exception as e:
+                    self.log.error(f"Failed to import oled_page_mix: {e}")
+                    
         # deduplicates
         # pages = list(set(pages))
         pages = list(dict.fromkeys(pages))
@@ -190,7 +205,7 @@ class OLEDService():
 
             if self.button == 'single_click':
                 if not self.wake_flag:
-                    self.log.info("OLED service waking up")
+                    self.log.debug("OLED service waking up")
                     self.wake_flag = True
                     last_page_index = -1
                 else:
@@ -206,13 +221,13 @@ class OLEDService():
                     self.wake_start_time = time.time()
                     
             if self.wake_flag:
-                if last_page_index != page_index or time.time() - last_refresh_time > INTERVAL:
+                if last_page_index != page_index or time.time() - last_refresh_time > self.REFRESH_INTERVAL:
                     last_page_index = page_index
                     last_refresh_time = time.time()
-                    pages[page_index](self.oled)
+                    pages[page_index](self.oled, self.config)
 
                 if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout:
-                    self.log.info("OLED sleep timeout, sleeping")
+                    self.log.debug("OLED sleep timeout, sleeping")
                     self.sleep()
                     continue
 

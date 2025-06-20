@@ -1,19 +1,16 @@
-from pipower5 import PiPower5
+from spc.spc import SPC
 
 from pathlib import Path
 grandparent_dir = Path(__file__).resolve().parent.parent
 output_icon = str(grandparent_dir) + '/icons/raspberry_icon_48.png'
 sunfounder_icon = str(grandparent_dir) + '/icons/sunfounder.ico'
 
+spc = SPC()
 
-
-pipower5 = PiPower5()
-
-
-
-def oled_page_output(oled):
+def oled_page_output(oled, config):
     global charge_bar_val
-    data_buffer = pipower5.read_all()
+
+    data_buffer = spc.read_all()
 
     output_voltage = data_buffer['output_voltage'] / 1000   
     output_current = data_buffer['output_current'] / 1000
@@ -23,7 +20,6 @@ def oled_page_output(oled):
 
     oled.draw_icon(output_icon, 76, 12, scale=1, dither=False, threshold=127)
     oled.draw_icon(sunfounder_icon, 105, 40, scale=0.8, dither=False, threshold=130)
-
 
     oled.draw_text('OUTPUT', 0, 0, size=14)
     oled.draw_text(f'  {output_voltage:.3f} V', 0, 16, size=16)

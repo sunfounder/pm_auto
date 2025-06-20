@@ -1,16 +1,17 @@
-from pipower5 import PiPower5
+from spc.spc import SPC
 
 from pathlib import Path
 grandparent_dir = Path(__file__).resolve().parent.parent
 charging_icon = str(grandparent_dir) + '/icons/charge_icon_20.png'
 
-pipower5 = PiPower5()
+spc = SPC()
 
 charge_bar_val = 0
 
-def oled_page_power(oled):
+def oled_page_power(oled, config):
     global charge_bar_val
-    data_buffer = pipower5.read_all()
+
+    data_buffer = spc.read_all()
 
     input_voltage = data_buffer['input_voltage'] / 1000   
     # input_current = data_buffer['input_current'] / 1000

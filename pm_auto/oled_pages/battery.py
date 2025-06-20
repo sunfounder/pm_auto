@@ -1,18 +1,19 @@
-from pipower5 import PiPower5
+from spc.spc import SPC
 
 from pathlib import Path
 grandparent_dir = Path(__file__).resolve().parent.parent
 charging_icon = str(grandparent_dir) + '/icons/charge_icon_20.png'
 battery_icon = str(grandparent_dir) + '/icons/battery_icon_40.png'  
 
-pipower5 = PiPower5()
+spc = SPC()
 
 charge_bar_val = 0
 blink_flag = True
 
-def oled_page_battery(oled):
+def oled_page_battery(oled, config):
     global charge_bar_val, blink_flag
-    data_buffer = pipower5.read_all()
+
+    data_buffer = spc.read_all()
 
     battery_voltage = data_buffer['battery_voltage'] / 1000   
     battery_current = data_buffer['battery_current'] / 1000
@@ -58,8 +59,8 @@ def oled_page_battery(oled):
         height = 22
         oled.draw.rectangle((x, y+height-int(height*battery_percentage/100.0), x+width, y+height), outline=1, fill=1)
 
-        power_source = pipower5.read_power_source()
-        if power_source == pipower5.BATTERY:
+        power_source = spc.read_power_source()
+        if power_source == spc.BATTERY:
             # oled.draw_text('discharging', 100, 8, size=8)
             if blink_flag:
                 blink_flag = False
