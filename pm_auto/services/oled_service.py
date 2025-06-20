@@ -194,7 +194,12 @@ class OLEDService():
         self.wake_start_time = time.time()
 
         while self.running:
-
+            if not self.enable:
+                if self.wake_flag:
+                    self.log.debug("OLED disabled, going to sleep")
+                    self.sleep()
+                continue
+            
             if self.is_power_off == True:
                 oled_page_power_off(self.oled)
                 time.sleep(.5)
