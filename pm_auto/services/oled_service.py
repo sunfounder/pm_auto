@@ -73,6 +73,7 @@ class OLEDService():
                 self.log.error("Invalid rotation value, must be 0, 90, 180, or 270")
             else:
                 self.config['oled_rotation'] = _rotation
+                self.set_rotation(_rotation)
                 self.log.debug(f"Update oled_rotation to {_rotation}")
         if "scroll_interval" in config:
             self.config['scroll_interval'] = config['scroll_interval']
