@@ -3,10 +3,12 @@ import time
 rectangle_coor = [0, 0, 7, 3]
 frame_index = 0
 
-def breathing(rgb_matrix, color=(255, 255, 255), interval=0.05):
+def breathing(rgb_matrix, config):
     global frame_index
     max_frames = 200
-    r, g, b = color
+    r, g, b = config['rgb_matrix_color']
+    speed = config['rgb_matrix_speed']
+    interval = 1 / speed
 
     if frame_index < 100:
         r = int(r * frame_index / 100)

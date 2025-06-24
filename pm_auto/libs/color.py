@@ -50,7 +50,6 @@ class Color():
         return '#{:06X}'.format(random.randint(0, 2**24 - 1))
     
     def colorful(self,x):
-        			
         return '#{:06X}'.format(x)
 	
     def rgb(self, r,g,b):
@@ -72,3 +71,89 @@ class Color():
         g = round(g1 * (1 - ratio) + g2 * ratio)
         b = round(b1 * (1 - ratio) + b2 * ratio)
         return '#{:02X}{:02X}{:02X}'.format(r, g, b)
+    
+
+    # str or hex, eg: 'ffffff', '#ffffff', '#FFFFFF'
+    @staticmethod
+    def hex_to_rgb(hex):
+        hex = hex.strip().replace('#', '')
+        r = int(hex[0:2], 16)
+        g = int(hex[2:4], 16)
+        b = int(hex[4:6], 16)
+        return [r, g, b]
+
+
+    @staticmethod
+    def hsl_to_rgb(hue, saturation=1, brightness=1):
+        hue = hue % 360
+        _hi = int((hue/60)%6)
+        _f = hue / 60.0 - _hi
+        _p = brightness * (1 - saturation)
+        _q = brightness * (1 - _f * saturation)
+        _t = brightness * (1 - (1 - _f) * saturation)
+        
+        if _hi == 0:
+            _R_val = brightness
+            _G_val = _t
+            _B_val = _p
+        if _hi == 1:
+            _R_val = _q
+            _G_val = brightness
+            _B_val = _p
+        if _hi == 2:
+            _R_val = _p
+            _G_val = brightness
+            _B_val = _t
+        if _hi == 3:
+            _R_val = _p
+            _G_val = _q
+            _B_val = brightness
+        if _hi == 4:
+            _R_val = _t
+            _G_val = _p
+            _B_val = brightness
+        if _hi == 5:
+            _R_val = brightness
+            _G_val = _p
+            _B_val = _q
+        
+        r = int(_R_val * 255)
+        g = int(_G_val * 255)
+        b = int(_B_val * 255)
+        return (r, g, b)
+    
+    @staticmethod
+    def hsv_to_rgb(hue):
+        if hue < 510:  # Red to Green-1
+            b = 0
+            if hue < 255:  #   Red to Yellow-1
+                r = 255
+                g = hue  #     g = 0 to 254
+            else:  #   Yellow to Green-1
+                r = 510 - hue  #     r = 255 to 1
+                g = 255
+
+        elif hue < 1020:  # Green to Blue-1
+            r = 0
+            if hue < 765:  #   Green to Cyan-1
+                g = 255
+                b = hue - 510  #     b = 0 to 254
+            else:  #   Cyan to Blue-1
+                g = 1020 - hue  #     g = 255 to 1
+                b = 255
+
+        elif hue < 1530:  # Blue to Red-1
+            g = 0
+            if hue < 1275:  #   Blue to Magenta-1
+                r = hue - 1020  #     r = 0 to 254
+                b = 255
+            else:  #   Magenta to Red-1
+                r = 255
+                b = 1530 - hue  #     b = 255 to 1
+
+        else:  # Last 0.5 Red (quicker than % operator)
+            r = 255
+            g = b = 0
+
+        list = [r, g, b]
+        return list

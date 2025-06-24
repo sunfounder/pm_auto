@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 MAX_FRAME = 36
 frame_index = 0
@@ -67,10 +68,21 @@ def rotate_matrix(matrix, angle_degrees, use_bilinear=True):
     return rotated
 
 
-_matrix = generate_rectangle_matrix(color=(0, 165, 255))
 
-def roate(rgb_matrix):
-    global frame_index
+_color = (0, 165, 255)
+_matrix = generate_rectangle_matrix(color=_color)
+
+def roate(rgb_matrix, config):
+    global frame_index, _color, _matrix
+
+    color = tuple(config['rgb_matrix_color'])
+    if color != _color:
+        _color = color
+        _matrix = generate_rectangle_matrix(color=_color)
+
+    speed = config['rgb_matrix_speed']
+    interval = 1 / speed
+
     angle = frame_index * (360 / MAX_FRAME)
     frame_index += 1
     if frame_index >= MAX_FRAME:
@@ -86,3 +98,4 @@ def roate(rgb_matrix):
             b = rotated_matrix[x][y][2]
             rgb_matrix.draw_point((x, y), (r, g, b))
     rgb_matrix.display()
+    time.sleep(interval)

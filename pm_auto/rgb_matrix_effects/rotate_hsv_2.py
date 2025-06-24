@@ -146,8 +146,12 @@ def rotate_and_crop(image_array, angle, output_size=(8, 4)):
 hsv_wheel_16_16 = create_hsv_wheel(16, 16)
 
 
-def roate_hsv_2(rgb_matrix):
+def roate_hsv_2(rgb_matrix, config):
     global frame_index
+
+    speed = config['rgb_matrix_speed']
+    interval = 1 / speed
+
     angle = frame_index * (360 / MAX_FRAME)
 
     rotated_cropped_8_4 = rotate_and_crop(hsv_wheel_16_16, angle)
@@ -164,5 +168,5 @@ def roate_hsv_2(rgb_matrix):
             b = rotated_cropped_8_4[x][y][2]
             rgb_matrix.draw_point((y, x), (r, g, b))
     rgb_matrix.display()
-    # time.sleep(.01)
+    time.sleep(interval)
     

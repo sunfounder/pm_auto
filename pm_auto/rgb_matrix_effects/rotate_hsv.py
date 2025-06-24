@@ -1,5 +1,6 @@
 import numpy as np
 import colorsys
+import time
 
 MAX_FRAME = 36
 frame_index = 0
@@ -68,8 +69,12 @@ def rotate_matrix(matrix, angle_degrees, use_bilinear=True):
 
 
 # 主函数
-def roate_hsv(rgb_matrix):
+def roate_hsv(rgb_matrix, config):
     global frame_index
+
+    speed = config['rgb_matrix_speed']
+    interval = 1 / speed
+
     angle = frame_index * (360 / MAX_FRAME)
     # 根据帧索引计算HSV颜色
     hue = frame_index / MAX_FRAME
@@ -93,3 +98,4 @@ def roate_hsv(rgb_matrix):
             b = rotated_matrix[x][y][2]
             rgb_matrix.draw_point((x, y), (r, g, b))
     rgb_matrix.display()
+    time.sleep(interval)

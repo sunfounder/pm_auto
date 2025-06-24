@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 MAX_FRAME = 36
 frame_index = 0
@@ -85,12 +86,17 @@ def rotate_matrix(matrix, angle_degrees, center=None, use_bilinear=True):
 
 _matrix = generate_rectangle_matrix(color1=(255, 0, 0), color2=(0, 0, 255))
 
-def roate_dual(rgb_matrix):
+def roate_dual(rgb_matrix, config):
     global frame_index
+
+    speed = config['rgb_matrix_speed']
+    interval = 1 / speed
+
     angle = frame_index * (360 / MAX_FRAME)
     frame_index += 1
     if frame_index >= MAX_FRAME:
         frame_index = 0
+
     
     # 左侧矩形顺时针旋转
     left_rotated = rotate_matrix(_matrix, angle, center=(0.5, 3.5))
@@ -119,4 +125,5 @@ def roate_dual(rgb_matrix):
             b = final_matrix[x][y][2]
             rgb_matrix.draw_point((x, y), (r, g, b))
     rgb_matrix.display()
+    time.sleep(interval)
 
