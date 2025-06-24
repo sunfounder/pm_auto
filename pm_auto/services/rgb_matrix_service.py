@@ -5,7 +5,7 @@ from ..libs.utils import log_error
 from ..libs.color import Color
 
 RGB_MATRIX_STYLES = [
-    'solid', 'breathing', 'rainbow', 'rotate', 'rotate_dual', 'rotate_hsv', 'rotate_hsv_2'
+    'solid', 'breathing', 'rainbow', 'rotate_1', 'rotate_2', 'rotate_3', 'rotate_4'
 ]
 
 RGB_MATRIX_DEFAULT_CONFIG = {
@@ -104,18 +104,18 @@ class RGBMatrixService():
             elif self.style == 'rainbow':
                 from ..rgb_matrix_effects.rainbow import rainbow
                 _effect = rainbow
-            elif self.style == 'rotate':
-                from ..rgb_matrix_effects.rotate import roate
-                _effect = roate
-            elif self.style == 'rotate_dual':
-                from ..rgb_matrix_effects.rotate_dual import roate_dual
-                _effect = roate_dual
-            elif self.style == 'rotate_hsv':
-                from ..rgb_matrix_effects.rotate_hsv import roate_hsv
-                _effect = roate_hsv
-            elif self.style == 'rotate_hsv_2':
-                from ..rgb_matrix_effects.rotate_hsv_2 import roate_hsv_2
-                _effect = roate_hsv_2
+            elif self.style == 'rotate_1':
+                from ..rgb_matrix_effects.rotate_1 import rotate_1
+                _effect = rotate_1
+            elif self.style == 'rotate_2':
+                from ..rgb_matrix_effects.rotate_2 import rotate_2
+                _effect = rotate_2
+            elif self.style == 'rotate_3':
+                from ..rgb_matrix_effects.rotate_3 import rotate_3
+                _effect = rotate_3
+            elif self.style == 'rotate_4':
+                from ..rgb_matrix_effects.rotate_4 import rotate_4
+                _effect = rotate_4
         return _effect
     
     @log_error

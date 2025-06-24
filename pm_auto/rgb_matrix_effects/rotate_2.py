@@ -86,7 +86,7 @@ def rotate_matrix(matrix, angle_degrees, center=None, use_bilinear=True):
 
 _matrix = generate_rectangle_matrix(color1=(255, 0, 0), color2=(0, 0, 255))
 
-def roate_dual(rgb_matrix, config):
+def rotate_2(rgb_matrix, config):
     global frame_index
 
     speed = config['rgb_matrix_speed']

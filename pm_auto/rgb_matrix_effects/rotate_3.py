@@ -69,7 +69,7 @@ def rotate_matrix(matrix, angle_degrees, use_bilinear=True):
 
 
 # 主函数
-def roate_hsv(rgb_matrix, config):
+def rotate_3(rgb_matrix, config):
     global frame_index
 
     speed = config['rgb_matrix_speed']

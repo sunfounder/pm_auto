@@ -72,7 +72,7 @@ def rotate_matrix(matrix, angle_degrees, use_bilinear=True):
 _color = (0, 165, 255)
 _matrix = generate_rectangle_matrix(color=_color)
 
-def roate(rgb_matrix, config):
+def rotate_1(rgb_matrix, config):
     global frame_index, _color, _matrix
 
     color = tuple(config['rgb_matrix_color'])

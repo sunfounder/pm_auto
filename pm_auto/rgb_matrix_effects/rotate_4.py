@@ -146,7 +146,7 @@ def rotate_and_crop(image_array, angle, output_size=(8, 4)):
 hsv_wheel_16_16 = create_hsv_wheel(16, 16)
 
 
-def roate_hsv_2(rgb_matrix, config):
+def rotate_4(rgb_matrix, config):
     global frame_index
 
     speed = config['rgb_matrix_speed']
