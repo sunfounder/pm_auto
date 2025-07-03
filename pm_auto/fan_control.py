@@ -150,7 +150,7 @@ class FanControl:
                 self.gpio_fan.set(gpio_fan_state)
         else:
             temperature = self.get_cpu_temperature()
-            self.log.debug(f"cpu temperature: {temperature} \"C")
+            self.log.debug(f"cpu temperature: {temperature} \'C")
             changed = False
             direction = ""
             if temperature < FAN_LEVELS[self.level]["low"]:
@@ -181,9 +181,9 @@ class FanControl:
                 self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
                 self.log.info(f"set fan power: {power}")
                 self.log.info(
-                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
+                    f"cpu temperature: {temperature} \'C, {direction}er than {FAN_LEVELS[self.level][direction]}")
             elif self.initial:
-                self.log.info(f"cpu temperature: {temperature} \"C")
+                self.log.info(f"cpu temperature: {temperature} \'C")
                 self.initial = False
         
         self.__on_state_changed__(state)
