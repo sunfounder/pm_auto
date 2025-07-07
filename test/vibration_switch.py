@@ -39,7 +39,7 @@ class VibrationSwitch:
         self.device = DigitalInputDevice(self.pin, pull_up=self.pull_up)
         return True
 
-    def set_on_vabration_detected(self, func):
+    def set_on_vibration_detected(self, func):
         self.device.when_activated = func
 
 def test():
@@ -63,7 +63,7 @@ def test1():
     def on_vabration_detected():
         print('Vibration detected')
 
-    vibration_switch.set_on_vabration_detected(on_vabration_detected)
+    vibration_switch.set_on_vibration_detected(on_vabration_detected)
 
     while True:
         time.sleep(1)

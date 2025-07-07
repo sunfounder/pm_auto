@@ -4,7 +4,7 @@ import os
 import time
 import threading
 
-from ..libs.utils import run_command, log_error
+from ..libs.utils import run_command, log_error, softlink_gpiochip0_to_gpiochip4
 
 default_config = {
     "gpio_fan_pin": 6,
@@ -156,7 +156,7 @@ class FanService:
                 self.gpio_fan.set(gpio_fan_state)
         else:
             temperature = self.get_cpu_temperature()
-            self.log.debug(f"cpu temperature: {temperature} \"C")
+            self.log.debug(f"cpu temperature: {temperature} \'C")
             changed = False
             direction = ""
             if temperature < FAN_LEVELS[self.level]["low"]:
@@ -186,9 +186,9 @@ class FanService:
                 self.log.info(f"set fan level: {FAN_LEVELS[self.level]['name']}")
                 self.log.info(f"set fan power: {power}")
                 self.log.info(
-                    f"cpu temperature: {temperature} \"C, {direction}er than {FAN_LEVELS[self.level][direction]}")
+                    f"cpu temperature: {temperature} \'C, {direction}er than {FAN_LEVELS[self.level][direction]}")
             elif self.initial:
-                self.log.info(f"cpu temperature: {temperature} \"C")
+                self.log.info(f"cpu temperature: {temperature} \'C")
                 self.initial = False
         
         self.__on_state_changed__(state)
@@ -258,6 +258,10 @@ class GPIOFan(Fan):
 
         try:
             import gpiozero
+            
+            # Fix gpiozero reads gpiochip4 while new kernel changed to gpiochip0
+            softlink_gpiochip0_to_gpiochip4()
+
             self.pin = pin
             self.fan = gpiozero.DigitalOutputDevice(pin)
             self.led = None

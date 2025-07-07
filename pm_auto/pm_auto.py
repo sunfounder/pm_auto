@@ -5,7 +5,6 @@ from watchdog.events import FileSystemEventHandler
 
 from .libs.utils import has_common_items, log_error
 
-
 app_name = 'pm_auto'
 
 DEFAULT_CONFIG = {
@@ -80,7 +79,7 @@ class PMAuto():
             self.log.debug("Initializing Vibration switch service")
             from .services.vibration_switch_service import VibrationSwitchService
             self.vibration_switch = VibrationSwitchService(config, get_logger=get_logger)
-            self.vibration_switch.set_on_vabration_detected(self.wake_oled)
+            self.vibration_switch.set_on_vibration_detected(self.wake_oled)
             self.log.debug("Vibration switch service initialized")
         if 'pironman_mcu' in peripherals:
             self.log.debug("Initializing Pironman MCU service")
