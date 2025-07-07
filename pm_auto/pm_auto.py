@@ -51,7 +51,7 @@ class PMAuto():
             if not self.oled.is_ready():
                 self.log.error("Failed to initialize OLED")
             else:
-                self.log.debug("OLED service initialized")            
+                self.log.info("OLED service initialized")            
         if 'ws2812' in peripherals:
             self.log.debug("Initializing WS2812 service")
             from .services.ws2812_service import WS2812Service
@@ -59,45 +59,45 @@ class PMAuto():
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812 service")
             else:
-                self.log.debug("WS2812 service initialized")
+                self.log.info("WS2812 service initialized")
         # if FANS in peripherals:
         if self.is_fan_enabled() or 'spc' in peripherals:
             self.log.debug("Initializing Fan service")
             from .services.fan_service import FanService
             self.fan = FanService(config, fans=peripherals, log=log)
-            self.log.debug("Fan service initialized")
+            self.log.info("Fan service initialized")
         if 'spc' in peripherals:
             self.log.debug("Initializing SPC service")
             from .services.spc_service import SPCService
             self.spc = SPCService(log=log)
             self.spc.set_button_callback(self.oled_button)
             self.spc.set_shutdown_callback(self.on_shutdown)
-            self.log.debug("SPC service initialized")
+            self.log.info("SPC service initialized")
         if 'vibration_switch' in peripherals:
             self.log.debug("Initializing Vibration switch service")
             from .services.vibration_switch_service import VibrationSwitchService
             self.vibration_switch = VibrationSwitchService(config, log=log)
             self.vibration_switch.set_on_vibration_detected(self.wake_oled)
-            self.log.debug("Vibration switch service initialized")
+            self.log.info("Vibration switch service initialized")
         if 'pironman_mcu' in peripherals:
             self.log.debug("Initializing Pironman MCU service")
             from.services.pironman_mcu_service import PironmanMCUService
             self.pironman_mcu = PironmanMCUService(config, log=log)
             self.pironman_mcu.set_on_button(self.oled_button)
             self.pironman_mcu.set_on_shutdown(self.on_shutdown)
-            self.log.debug("Pironman MCU service initialized")
+            self.log.info("Pironman MCU service initialized")
         if 'pi5_pwr_btn' in peripherals:
             self.log.debug("Initializing Power button service")
             from .services.pi5_pwr_btn_service import Pi5PwrBtn
             self.pi5_pwr_btn = Pi5PwrBtn(grab=True)
             self.pi5_pwr_btn.set_button_callback(self.oled_button)
             self.pi5_pwr_btn.set_shutdown_callback(self.on_shutdown)
-            self.log.debug("Power button service initialized")
+            self.log.info("Power button service initialized")
         if 'rgb_matrix' in peripherals:
             self.log.debug("Initializing RGB Matrix service")
             from .services.rgb_matrix_service import RGBMatrixService
             self.rgb_matrix = RGBMatrixService(config, log=log)
-            self.log.debug("RGB Matrix service initialized")
+            self.log.info("RGB Matrix service initialized")
             
         self.__on_state_changed__ = None
 

@@ -101,7 +101,6 @@ class SPCService():
             return
         self.running = True
         self._thread = threading.Thread(target=self.loop, daemon=True)
-        self.log.info("SPC Service Start")
         self._thread.start()
 
     def stop(self):
