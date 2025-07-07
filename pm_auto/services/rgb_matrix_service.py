@@ -4,10 +4,7 @@ from ..libs.rgb_matrix import RGB_Matrix
 from ..libs.utils import log_error
 from ..libs.color import Color
 import logging
-
-RGB_MATRIX_STYLES = [
-    'solid', 'breathing', 'rainbow', 'rotate_1', 'rotate_2', 'rotate_3', 'rotate_4'
-]
+from ..rgb_matrix_effects import get_effect, EFFECT_LIST, DEFAULT_EFFECT
 
 RGB_MATRIX_DEFAULT_CONFIG = {
     'rgb_matrix_enable': True,
@@ -29,7 +26,8 @@ class RGBMatrixService():
             self.rgb_matrix.clear()
             self.rgb_matrix.display()
         except Exception as e:
-            self.log.error(f"Failed to initialize RGB Matrix: {e}")
+            self.log.error(f"Failed to initialize RGB Matrix")
+            self.log.exception(e)
             return
         self._is_ready = True
 
@@ -57,7 +55,7 @@ class RGBMatrixService():
             self.config['rgb_matrix_enable'] = _enable
             self.log.debug(f"Update RGB Matrix enable: {_enable}")
         if 'rgb_matrix_style' in config:
-            if not isinstance(config['rgb_matrix_style'], str) or config['rgb_matrix_style'] not in RGB_MATRIX_STYLES:
+            if not isinstance(config['rgb_matrix_style'], str) or config['rgb_matrix_style'] not in EFFECT_LIST:
                 self.log.error("Invalid rgb_matrix_style")
                 return
             self.config['rgb_matrix_style'] = config['rgb_matrix_style']
@@ -84,33 +82,10 @@ class RGBMatrixService():
 
     @log_error
     def init_effect(self):
-        _effect = None
-        if self.style not in RGB_MATRIX_STYLES:
-            from ..rgb_matrix_effects.rainbow import rainbow
-            _effect = rainbow
-        else:
-            if self.style == 'solid':
-                from ..rgb_matrix_effects.solid import solid
-                _effect = solid
-            elif self.style == 'breathing':
-                from ..rgb_matrix_effects.breathing import breathing
-                _effect = breathing
-            elif self.style == 'rainbow':
-                from ..rgb_matrix_effects.rainbow import rainbow
-                _effect = rainbow
-            elif self.style == 'rotate_1':
-                from ..rgb_matrix_effects.rotate_1 import rotate_1
-                _effect = rotate_1
-            elif self.style == 'rotate_2':
-                from ..rgb_matrix_effects.rotate_2 import rotate_2
-                _effect = rotate_2
-            elif self.style == 'rotate_3':
-                from ..rgb_matrix_effects.rotate_3 import rotate_3
-                _effect = rotate_3
-            elif self.style == 'rotate_4':
-                from ..rgb_matrix_effects.rotate_4 import rotate_4
-                _effect = rotate_4
-        return _effect
+        if self.style not in EFFECT_LIST:
+            self.log.warning(f'RGB_Matrix Style error, change to default effect {DEFAULT_EFFECT}. Style {self.style} not found, Choose from {EFFECT_LIST}')
+            return
+        return get_effect(self.style)
     
     @log_error
     def loop(self):
@@ -127,14 +102,15 @@ class RGBMatrixService():
                 time.sleep(1)
                 continue
             try:
-                if self.style not in RGB_MATRIX_STYLES:
+                if self.style not in EFFECT_LIST:
                     self.log.error(f'RGB_Matrix Style error: {self.style}')
                     time.sleep(5)
                     continue
                 effect(self.rgb_matrix, self.config)
                 time.sleep(.01)
             except Exception as e:
-                self.log.error(f'RGB_Matrix Service error: {type(e)} {e}')
+                self.log.error('RGB_Matrix Service error:')
+                self.log.exception(e)
                 time.sleep(5)
 
     @log_error

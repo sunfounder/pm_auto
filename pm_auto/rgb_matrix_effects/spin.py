@@ -2,34 +2,45 @@ import numpy as np
 import time
 
 MAX_FRAME = 36
+DEFAULT_COLOR = (255, 165, 0)
 frame_index = 0
 
-# 生成带中心边矩形的8x4 RGB矩阵
-def generate_rectangle_matrix(color=(255, 165, 0)):
+# 生成带两个对称中心边矩形的8x4 RGB矩阵
+def generate_rectangle_matrix(color=(255, 0, 0), color2=None):
     matrix = np.zeros((8, 4, 3), dtype=np.uint8)
     
-    # 矩形参数 - 宽度为4，高度为4，底部边的中点在矩阵中心
-    rect_width = 4
-    rect_height = 4
-    center_x, center_y = 1.5, 3.5  # 矩阵物理中心
+    left1 = 0
+    right1 = 3
+    top1 = 0
+    bottom1 = 3
     
-    # 计算矩形四个顶点坐标
-    left = int(max(0, center_x - rect_width / 2 + 0.5))
-    right = int(min(3, center_x + rect_width / 2 - 0.5))
-    top = int(max(0, center_y - rect_height + 1))
-    bottom = int(center_y)
+    left2 = 0
+    right2 = 3
+    top2 = 4
+    bottom2 = 7
     
-    # 填充矩形区域
-    for y in range(top, bottom + 1):
-        for x in range(left, right + 1):
-            matrix[y, x] = color  # 矩形颜色
+    # 填充左侧矩形区域
+    for y in range(top1, bottom1 + 1):
+        for x in range(left1, right1 + 1):
+            matrix[y, x] = color  # 左侧矩形颜色
+    
+    if color2 != None:
+        # 填充右侧矩形区域
+        for y in range(top2, bottom2 + 1):
+            for x in range(left2, right2 + 1):
+                matrix[y, x] = color2  # 右侧矩形颜色
+    
     return matrix
 
-
 # 旋转RGB矩阵 - 支持任意角度和矩阵尺寸
-def rotate_matrix(matrix, angle_degrees, use_bilinear=True):
+def rotate_matrix(matrix, angle_degrees, center=None, use_bilinear=True):
     height, width = matrix.shape[:2]
-    center_y, center_x = (height - 1) / 2, (width - 1) / 2
+    
+    # 如果未指定中心，则使用矩阵中心
+    if center is None:
+        center_y, center_x = (height - 1) / 2, (width - 1) / 2
+    else:
+        center_x, center_y = center
     
     angle_radians = np.radians(angle_degrees)
     cos_val = np.cos(angle_radians)
@@ -67,18 +78,14 @@ def rotate_matrix(matrix, angle_degrees, use_bilinear=True):
     
     return rotated
 
+_matrix = []
 
+def spin(rgb_matrix, config):
+    global frame_index, _matrix
 
-_color = (0, 165, 255)
-_matrix = generate_rectangle_matrix(color=_color)
-
-def rotate_1(rgb_matrix, config):
-    global frame_index, _color, _matrix
-
-    color = tuple(config['rgb_matrix_color'])
-    if color != _color:
-        _color = color
-        _matrix = generate_rectangle_matrix(color=_color)
+    color = tuple(config.get('rgb_matrix_color', DEFAULT_COLOR)) or DEFAULT_COLOR
+    if _matrix == []:
+        _matrix = generate_rectangle_matrix(color)
 
     speed = config['rgb_matrix_speed']
     interval = 1 / speed

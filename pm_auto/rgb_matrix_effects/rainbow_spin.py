@@ -86,7 +86,6 @@ def hsv_to_rgb(hsv):
 
     return rgb.reshape(in_shape)
 
-
 def create_hsv_wheel(width=16, height=16):
     """创建仅包含 7 种颜色的 HSV 色盘（以图像中心为原点）"""
     y, x = np.mgrid[0:height, 0:width]
@@ -142,11 +141,9 @@ def rotate_and_crop(image_array, angle, output_size=(8, 4)):
     
     return np.array(cropped_image)
 
-
 hsv_wheel_16_16 = create_hsv_wheel(16, 16)
 
-
-def rotate_4(rgb_matrix, config):
+def rainbow_spin(rgb_matrix, config):
     global frame_index
 
     speed = config['rgb_matrix_speed']
