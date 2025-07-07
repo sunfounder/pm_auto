@@ -3,6 +3,7 @@ import threading
 from ..libs.rgb_matrix import RGB_Matrix
 from ..libs.utils import log_error
 from ..libs.color import Color
+import logging
 
 RGB_MATRIX_STYLES = [
     'solid', 'breathing', 'rainbow', 'rotate_1', 'rotate_2', 'rotate_3', 'rotate_4'
@@ -19,11 +20,8 @@ RGB_MATRIX_DEFAULT_CONFIG = {
 class RGBMatrixService():
 
     @log_error
-    def __init__(self, config, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config, log=None):
+        self.log = log or logging.getLogger(__name__)
 
         self._is_ready = False
         try:
@@ -47,10 +45,6 @@ class RGBMatrixService():
 
         self.running = False
         self.thread = None
-
-    @log_error
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
 
     @log_error
     def is_ready(self):

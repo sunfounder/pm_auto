@@ -1,6 +1,7 @@
 from ..libs.utils import log_error
 import time
 import threading
+import logging
 
 BUTTON_MAP = {
     0: 'released',
@@ -25,15 +26,13 @@ class SPCService():
     REG_WRITE_POWER_BTN_STATE = 12
 
     @log_error
-    def __init__(self, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, log=None):
+        self.log = log or logging.getLogger(__name__)
+
         self._is_ready = False
 
         from spc.spc import SPC
-        self.spc = SPC(get_logger=get_logger)
+        self.spc = SPC()
         if not self.spc.is_ready():
             self._is_ready = False
             return
@@ -47,10 +46,6 @@ class SPCService():
     @log_error
     def is_ready(self):
         return self._is_ready
-
-    @log_error
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
 
     @log_error
     def set_button_callback(self, callback):

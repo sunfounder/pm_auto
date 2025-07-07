@@ -1,5 +1,6 @@
 import time
 import threading
+import logging
 
 # https://github.com/adafruit/Adafruit_CircuitPython_NeoPixel_SPI
 import board
@@ -24,11 +25,8 @@ default_config = {
 
 class WS2812Service():
 
-    def __init__(self, config=default_config, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config=default_config, log=None):
+        self.log = log or logging.getLogger(__name__)
         self._is_ready = False
 
         self.led_count = 8
@@ -52,9 +50,6 @@ class WS2812Service():
                 self.init()
             except Exception as e:
                 self.log.error("Failed to initialize WS2812 Service: %s" % e)
-
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
 
     def is_ready(self):
         return self._is_ready

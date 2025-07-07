@@ -2,6 +2,7 @@ from pm_auto.services.pironman_mcu_service import INTERVAL
 from ..libs.ssd1306 import SSD1306
 from ..libs.utils import log_error
 
+import logging
 import time
 import threading
 
@@ -24,11 +25,8 @@ class OLEDService():
     MAX_SLEEP_TIMEOUT = 3600 # 600s, 10min, maximum sleep timeout
 
     @log_error
-    def __init__(self, config, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config, log=None):
+        self.log = log or logging.getLogger(__name__)
         self._is_ready = False
 
         try:
@@ -52,10 +50,6 @@ class OLEDService():
         self.is_power_off = False
         self.running = False
         self.thread = None
-
-    @log_error
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
 
     @log_error
     def update_config(self, config):

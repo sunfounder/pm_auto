@@ -8,16 +8,13 @@ import time
 
 from ..libs.utils import log_error
 from ..libs.pironman_mcu import PironmanMCU, ShutdownReason
-from sf_rpi_status import shutdown
+import logging
 
 INTERVAL = 0.1
 
 class PironmanMCUService:
-    def __init__(self, config, get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config, log=None):
+        self.log = log or logging.getLogger(__name__)
         self._is_ready = False
         self.mcu = None
         try:
@@ -31,10 +28,6 @@ class PironmanMCUService:
         self.running = False
         self.thread = None
     
-    @log_error
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
-
     @log_error
     def is_ready(self):
         return self._is_ready

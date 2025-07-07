@@ -27,7 +27,7 @@ def get_logger(name):
     log.addHandler(console_handler)
     return log
 
-pm_auto = PMAuto(config, peripherals=peripherals, get_logger=get_logger)
+pm_auto = PMAuto(config, peripherals=peripherals, log=log)
 # pm_auto.set_on_state_changed(lambda state: print(state))
 
 def main():

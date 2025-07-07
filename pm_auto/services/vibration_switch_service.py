@@ -1,13 +1,9 @@
-from gpiozero import DigitalInputDevice
 from ..libs.utils import log_error, softlink_gpiochip0_to_gpiochip4
+import logging
 
 class VibrationSwitchService:
-    def __init__(self, config, get_logger=None):
-
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config, log=None):
+        self.log = log or logging.getLogger(__name__)
         self._is_ready = False
 
         self.device = None
@@ -16,10 +12,6 @@ class VibrationSwitchService:
         self.when_activated = None
 
         self.update_config(config)
-
-    @log_error
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
 
     @log_error
     def is_ready(self):

@@ -2,6 +2,7 @@ import time
 import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import logging
 
 from .libs.utils import has_common_items, log_error
 
@@ -29,11 +30,8 @@ DEFAULT_CONFIG = {
 
 class PMAuto():
     @log_error
-    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], get_logger=None):
-        if get_logger is None:
-            import logging
-            get_logger = logging.getLogger
-        self.log = get_logger(__name__)
+    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], log=None):
+        self.log = log or logging.getLogger(app_name)
         self._is_ready = False
         self.peripherals = peripherals
 
@@ -49,7 +47,7 @@ class PMAuto():
         if 'oled' in peripherals:
             from .services.oled_service import OLEDService
             self.log.debug("Initializing OLED service")
-            self.oled = OLEDService(config, get_logger=get_logger)
+            self.oled = OLEDService(config, log=log)
             if not self.oled.is_ready():
                 self.log.error("Failed to initialize OLED")
             else:
@@ -57,7 +55,7 @@ class PMAuto():
         if 'ws2812' in peripherals:
             self.log.debug("Initializing WS2812 service")
             from .services.ws2812_service import WS2812Service
-            self.ws2812 = WS2812Service(config, get_logger=get_logger)
+            self.ws2812 = WS2812Service(config, log=log)
             if not self.ws2812.is_ready():
                 self.log.error("Failed to initialize WS2812 service")
             else:
@@ -66,25 +64,25 @@ class PMAuto():
         if self.is_fan_enabled() or 'spc' in peripherals:
             self.log.debug("Initializing Fan service")
             from .services.fan_service import FanService
-            self.fan = FanService(config, fans=peripherals, get_logger=get_logger)
+            self.fan = FanService(config, fans=peripherals, log=log)
             self.log.debug("Fan service initialized")
         if 'spc' in peripherals:
             self.log.debug("Initializing SPC service")
             from .services.spc_service import SPCService
-            self.spc = SPCService(get_logger=get_logger)
+            self.spc = SPCService(log=log)
             self.spc.set_button_callback(self.oled_button)
             self.spc.set_shutdown_callback(self.on_shutdown)
             self.log.debug("SPC service initialized")
         if 'vibration_switch' in peripherals:
             self.log.debug("Initializing Vibration switch service")
             from .services.vibration_switch_service import VibrationSwitchService
-            self.vibration_switch = VibrationSwitchService(config, get_logger=get_logger)
+            self.vibration_switch = VibrationSwitchService(config, log=log)
             self.vibration_switch.set_on_vibration_detected(self.wake_oled)
             self.log.debug("Vibration switch service initialized")
         if 'pironman_mcu' in peripherals:
             self.log.debug("Initializing Pironman MCU service")
             from.services.pironman_mcu_service import PironmanMCUService
-            self.pironman_mcu = PironmanMCUService(config, get_logger=get_logger)
+            self.pironman_mcu = PironmanMCUService(config, log=log)
             self.pironman_mcu.set_on_button(self.oled_button)
             self.pironman_mcu.set_on_shutdown(self.on_shutdown)
             self.log.debug("Pironman MCU service initialized")
@@ -98,7 +96,7 @@ class PMAuto():
         if 'rgb_matrix' in peripherals:
             self.log.debug("Initializing RGB Matrix service")
             from .services.rgb_matrix_service import RGBMatrixService
-            self.rgb_matrix = RGBMatrixService(config, get_logger=get_logger)
+            self.rgb_matrix = RGBMatrixService(config, log=log)
             self.log.debug("RGB Matrix service initialized")
             
         self.__on_state_changed__ = None
@@ -158,22 +156,6 @@ class PMAuto():
     def is_fan_enabled(self):
         from .services.fan_service import FANS
         return has_common_items(FANS, self.peripherals)
-
-    @log_error
-    def set_debug_level(self, level):
-        self.log.setLevel(level)
-        if self.oled is not None:
-            self.oled.set_debug_level(level)
-        if self.ws2812 is not None:
-            self.ws2812.set_debug_level(level)
-        if self.fan is not None:
-            self.fan.set_debug_level(level)
-        if self.spc is not None:
-            self.spc.set_debug_level(level)
-        if self.vibration_switch is not None:
-            self.vibration_switch.set_debug_level(level)
-        if self.pironman_mcu is not None:
-            self.pironman_mcu.set_debug_level(level)
 
     @log_error
     def set_on_state_changed(self, callback):
