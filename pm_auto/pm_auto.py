@@ -9,6 +9,7 @@ from .libs.utils import has_common_items, log_error
 app_name = 'pm_auto'
 
 DEFAULT_CONFIG = {
+    'temperature_unit': 'C',
     'rgb_led_count': 4,
     'rgb_enable': True,
     'rgb_color': '#ff00ff',
@@ -20,12 +21,17 @@ DEFAULT_CONFIG = {
     'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
     'oled_sleep': False,
     'oled_sleep_timeout': 10,
-    'temperature_unit': 'C',
     'oled_pages': [
         'performance',
         'ips',
         'disk',
     ],
+    'rgb_matrix_enable': True,
+    'rgb_matrix_style': 'rainbow',
+    'rgb_matrix_color': '#ff0000',
+    'rgb_matrix_color2': '#0000ff',
+    'rgb_matrix_brightness': 100,  # 0-100
+    'rgb_matrix_speed': 50,
 }
 
 class PMAuto():

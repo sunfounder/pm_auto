@@ -28,7 +28,7 @@ def get_effect(effect_name):
         from .spin import spin
         return spin
     elif effect_name == "dual_spin":
-        from .dual_spin import dual_spin
+        from .spin import dual_spin
         return dual_spin
     elif effect_name == "rainbow_spin":
         from .rainbow_spin import rainbow_spin

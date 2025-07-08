@@ -9,7 +9,8 @@ from ..rgb_matrix_effects import get_effect, EFFECT_LIST, DEFAULT_EFFECT
 RGB_MATRIX_DEFAULT_CONFIG = {
     'rgb_matrix_enable': True,
     'rgb_matrix_style': 'rainbow',
-    'rgb_matrix_color': '#00ffff',
+    'rgb_matrix_color': '#ff0000',
+    'rgb_matrix_color2': '#0000ff',
     'rgb_matrix_brightness': 100,  # 0-100
     'rgb_matrix_speed': 50,
 }
@@ -38,6 +39,7 @@ class RGBMatrixService():
         self.enable = self.config['rgb_matrix_enable']
         self.style = self.config['rgb_matrix_style']
         self.color = self.config['rgb_matrix_color']
+        self.color2 = self.config['rgb_matrix_color2']
         self.brightness = self.config['rgb_matrix_brightness']
         self.speed = self.config['rgb_matrix_speed']
 
@@ -66,6 +68,12 @@ class RGBMatrixService():
                 return
             self.config['rgb_matrix_color'] = Color.hex_to_rgb(config['rgb_matrix_color'])
             self.log.debug(f"Update RGB Matrix color: {self.config['rgb_matrix_color']}")
+        if 'rgb_matrix_color2' in config:
+            if not isinstance(config['rgb_matrix_color2'], str):
+                self.log.error("Invalid rgb_matrix_color2")
+                return
+            self.config['rgb_matrix_color2'] = Color.hex_to_rgb(config['rgb_matrix_color2'])
+            self.log.debug(f"Update RGB Matrix color2: {self.config['rgb_matrix_color2']}")
         if 'rgb_matrix_brightness' in config:
             if not isinstance(config['rgb_matrix_brightness'], int):
                 self.log.error("Invalid rgb_matrix_brightness")

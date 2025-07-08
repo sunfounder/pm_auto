@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+from .spin import rotate_and_crop
 import time
 
 MAX_FRAME = 40
@@ -92,16 +92,12 @@ def create_hsv_wheel(width=16, height=16):
     center_x, center_y = (width - 1) / 2, (height - 1) / 2
     dx, dy = x - center_x, y - center_y
 
-    radius = np.sqrt(dx ** 2 + dy ** 2)
     theta = np.arctan2(dy, dx)  # 弧度 [-π, π]
 
-    max_radius = np.sqrt(center_x ** 2 + center_y ** 2)
     # 将角度离散化为 7 个值
     num_colors = 7
     discrete_theta = np.round(theta / (2 * np.pi) * num_colors) % num_colors
     h = discrete_theta / num_colors  # [0, 1] 范围，仅 7 个不同值
-    # s = np.clip(radius / max_radius, 0, 1)
-    # v = np.ones_like(h)
 
     # 固定饱和度和明度为 1，避免渐变
     s = np.ones_like(h)
@@ -110,36 +106,6 @@ def create_hsv_wheel(width=16, height=16):
     hsv = np.stack([h, s, v], axis=2)
     rgb = hsv_to_rgb(hsv)
     return (rgb * 255).astype(np.uint8)
-
-def rotate_and_crop(image_array, angle, output_size=(8, 4)):
-    """旋转16*16色盘并提取中间8*4区域"""
-    orig_height, orig_width = image_array.shape[:2]
-    out_width, out_height = output_size
-    
-    # 创建PIL图像
-    image = Image.fromarray(image_array)
-    
-    # 计算中心点
-    center = ((orig_width-1)/2, (orig_height-1)/2)
-    
-    # 旋转图像
-    rotated_image = image.rotate(
-        angle, 
-        resample=Image.BICUBIC,
-        center=center,
-        expand=False
-    )
-    
-    # 计算要提取的中间区域
-    left = (orig_width - out_width) // 2
-    top = (orig_height - out_height) // 2
-    right = left + out_width
-    bottom = top + out_height
-    
-    # 提取中间区域
-    cropped_image = rotated_image.crop((left, top, right, bottom))
-    
-    return np.array(cropped_image)
 
 hsv_wheel_16_16 = create_hsv_wheel(16, 16)
 

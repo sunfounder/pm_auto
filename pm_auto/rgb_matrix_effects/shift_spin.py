@@ -1,8 +1,9 @@
 import colorsys
 import time
-from .spin import rotate_matrix, generate_rectangle_matrix
+from .spin import draw_2_half_rectangle_matrix, rotate_and_crop
 
 MAX_FRAME = 36
+DEFAULT_COLOR = (255, 0, 0)
 frame_index = 0
 
 # 主函数
@@ -22,17 +23,17 @@ def shift_spin(rgb_matrix, config):
     g = int(g * 255)
     b = int(b * 255)
     color = (r, g, b)
-    _matrix = generate_rectangle_matrix(color=color)
+    _matrix = draw_2_half_rectangle_matrix(color=color)
     frame_index += 1
     if frame_index >= MAX_FRAME:
         frame_index = 0
-    rotated_matrix = rotate_matrix(_matrix, angle)
+    rotated_matrix = rotate_and_crop(_matrix, angle)
     rotated_matrix = rotated_matrix.tolist()
-    for x in range(8):
-        for y in range(4):
+    for y in range(8):
+        for x in range(4):
             r = rotated_matrix[x][y][0]
             g = rotated_matrix[x][y][1]
             b = rotated_matrix[x][y][2]
-            rgb_matrix.draw_point((x, y), (r, g, b))
+            rgb_matrix.draw_point((y, x), (r, g, b))
     rgb_matrix.display()
     time.sleep(interval)
