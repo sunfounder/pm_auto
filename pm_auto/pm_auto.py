@@ -1,7 +1,4 @@
 import time
-import threading
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 import logging
 
 from .libs.utils import has_common_items, log_error
