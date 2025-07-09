@@ -205,7 +205,7 @@ class PMAuto():
         if self.rgb_matrix is not None:
             self.rgb_matrix.start()
 
-        self.log.info("PM Auto Start")
+        self.log.info("PM Auto atarted")
 
     @log_error
     def stop(self):

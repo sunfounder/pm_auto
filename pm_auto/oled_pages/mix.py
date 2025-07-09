@@ -56,13 +56,12 @@ def oled_page_mix(oled, config):
                 ip_index = 0
 
         interface, ip = next(islice(ips.items(), ip_index, ip_index + 1))
-        if interface == 'eth0':
+        if interface.startswith('eth') or interface.startswith('en'):
             oled.draw_icon(ethernet_icon, 0, 0, scale=1, invert=False,  dither=False, threshold=80)
-        elif interface == 'wlan0':
+            oled.draw_text(f'{ip}', 22, 0, size=14)
+        elif interface.startswith('wlan') or interface.startswith('wl'):
             oled.draw_icon(wifi_icon, 0, 0, scale=1, invert=False, dither=False, threshold=85)
-        else:
-            oled.draw_icon(net_icon, 0, 0, scale=1, invert=False, dither=False, threshold=100)
-        oled.draw_text(f'{ip}', 22, 0, size=14)
+            oled.draw_text(f'{ip}', 22, 0, size=14)
 
     # cpu
     oled.draw_icon(cpu_icon, 0, 25, scale=1, invert=False)

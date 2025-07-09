@@ -43,13 +43,12 @@ def oled_page_ips(oled, config):
         for i in range(3):
             try:
                 interface, ip = next(_iter)
-                if interface == 'eth0':
+                if interface.startswith('eth') or interface.startswith('en'):
                     oled.draw_icon(ethernet_icon, 0, i*22, scale=1, invert=False,  dither=False, threshold=80)
-                elif interface == 'wlan0':
+                    oled.draw_text(f'{ip}', 22, i * 22, size=14)
+                elif interface.startswith('wlan') or interface.startswith('wl'):
                     oled.draw_icon(wifi_icon, 0, i*22, scale=1, invert=False, dither=False, threshold=85)
-                else:
-                    oled.draw_icon(net_icon, 0, i*22, scale=1, invert=False, dither=False, threshold=100)
-                oled.draw_text(f'{ip}', 22, i * 22, size=14)
+                    oled.draw_text(f'{ip}', 22, i * 22, size=14)
             except StopIteration:
                 break
 
