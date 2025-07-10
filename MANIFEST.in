@@ -1,2 +1,1 @@
-recursive-include pm_auto/fonts *
-recursive-include pm_auto/icons *
+recursive-include pm_auto/assets *

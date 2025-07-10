@@ -25,7 +25,6 @@ from PIL import Image, ImageDraw, ImageFont
 from importlib.resources import files as resource_files
 
 from .i2c import I2C
-from .utils import run_command
 
 __package_name__ = __name__.split('.')[0]
 
@@ -295,7 +294,6 @@ class SSD1306():
 
         self.image = Image.new('1', (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image)
-        # self.font_path = str(resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf'))
         self.font_path = str(resource_files(__package_name__).joinpath('fonts/UbuntuSans-Regular.ttf'))
 
 

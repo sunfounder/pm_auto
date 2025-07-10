@@ -1,9 +1,12 @@
-import time
 import logging
 
-from .libs.utils import has_common_items, log_error
+from .libs.utils import log_error
+from .libs.event_bus import EventBus
+from .addons import Addons
 
-app_name = 'pm_auto'
+from typing import Dict
+import threading
+import asyncio
 
 DEFAULT_CONFIG = {
     'temperature_unit': 'C',
@@ -31,197 +34,79 @@ DEFAULT_CONFIG = {
     'rgb_matrix_speed': 50,
 }
 
-class PMAuto():
-    @log_error
-    def __init__(self, config=DEFAULT_CONFIG, peripherals=[], log=None):
-        self.log = log or logging.getLogger(app_name)
+class PMAuto:
+    def __init__(self, config=DEFAULT_CONFIG, peripherals=None, event_map=None, log=None):
+        self.log = log or logging.getLogger(__name__)
         self._is_ready = False
-        self.peripherals = peripherals
+        # 创建全局事件总线实例
+        self.event = EventBus(log=log)
+        self.config = config
+        self.peripherals = peripherals or []
+        self.data = {}
+        self.thread = None  # 添加线程属性
+        self.loop = None    # 添加事件循环属性
 
-        self.oled = None
-        self.ws2812 = None
-        self.fan = None
-        self.spc = None
-        self.vibration_switch = None
-        self.pironman_mcu = None
-        self.pi5_pwr_btn = None
-        self.rgb_matrix = None
+        # Add system addon for all device
+        self.peripherals.append('system')
 
-        if 'oled' in peripherals:
-            from .services.oled_service import OLEDService
-            self.log.debug("Initializing OLED service")
-            self.oled = OLEDService(config, log=log)
-            if not self.oled.is_ready():
-                self.log.error("Failed to initialize OLED")
-            else:
-                self.log.info("OLED service initialized")            
-        if 'ws2812' in peripherals:
-            self.log.debug("Initializing WS2812 service")
-            from .services.ws2812_service import WS2812Service
-            self.ws2812 = WS2812Service(config, log=log)
-            if not self.ws2812.is_ready():
-                self.log.error("Failed to initialize WS2812 service")
-            else:
-                self.log.info("WS2812 service initialized")
-        # if FANS in peripherals:
-        if self.is_fan_enabled() or 'spc' in peripherals:
-            self.log.debug("Initializing Fan service")
-            from .services.fan_service import FanService
-            self.fan = FanService(config, fans=peripherals, log=log)
-            self.log.info("Fan service initialized")
-        if 'spc' in peripherals:
-            self.log.debug("Initializing SPC service")
-            from .services.spc_service import SPCService
-            self.spc = SPCService(log=log)
-            self.spc.set_button_callback(self.oled_button)
-            self.spc.set_shutdown_callback(self.on_shutdown)
-            self.log.info("SPC service initialized")
-        if 'vibration_switch' in peripherals:
-            self.log.debug("Initializing Vibration switch service")
-            from .services.vibration_switch_service import VibrationSwitchService
-            self.vibration_switch = VibrationSwitchService(config, log=log)
-            self.vibration_switch.set_on_vibration_detected(self.wake_oled)
-            self.log.info("Vibration switch service initialized")
-        if 'pironman_mcu' in peripherals:
-            self.log.debug("Initializing Pironman MCU service")
-            from.services.pironman_mcu_service import PironmanMCUService
-            self.pironman_mcu = PironmanMCUService(config, log=log)
-            self.pironman_mcu.set_on_button(self.oled_button)
-            self.pironman_mcu.set_on_shutdown(self.on_shutdown)
-            self.log.info("Pironman MCU service initialized")
-        if 'pi5_pwr_btn' in peripherals:
-            self.log.debug("Initializing Power button service")
-            from .services.pi5_pwr_btn_service import Pi5PwrBtn
-            self.pi5_pwr_btn = Pi5PwrBtn(grab=True)
-            self.pi5_pwr_btn.set_button_callback(self.oled_button)
-            self.pi5_pwr_btn.set_shutdown_callback(self.on_shutdown)
-            self.log.info("Power button service initialized")
-        if 'rgb_matrix' in peripherals:
-            self.log.debug("Initializing RGB Matrix service")
-            from .services.rgb_matrix_service import RGBMatrixService
-            self.rgb_matrix = RGBMatrixService(config, log=log)
-            self.log.info("RGB Matrix service initialized")
-            
-        self.__on_state_changed__ = None
+        # Initialize addons
+        self.addons = Addons(
+            peripherals=self.peripherals,
+            config=self.config,
+            event=self.event,
+            log=self.log)
+
+        # Initialize event map
+        self.event_map = event_map or {}
+        # Connect events
+        for pub_event_name, sub_event_name in self.event_map.items():
+            self.event.connect(pub_event_name, sub_event_name)
+        
+        self.event.subscribe("before_shutdown", self.stop)
+        self.event.subscribe("data_changed", self.handle_data_changed)
 
     @log_error
-    def wake_oled(self):
-        if self.oled is None or not self.oled.is_ready():
-            return
-        self.log.info("Wake OLED")
-        self.oled.wake()
-        self.oled.button()
+    def handle_data_changed(self, data: Dict) -> None:
+        self.data.update(data)
 
     @log_error
-    def oled_button(self, button_state):
-        if self.oled is None or not self.oled.is_ready():
-            return
-        self.oled.set_button(button_state)    
+    def read(self) -> Dict:
+        return self.data
 
     @log_error
-    def clean_up(self):
-        if self.oled is not None and self.oled.is_ready():
-            self.oled.stop()
-        if self.ws2812 is not None and self.ws2812.is_ready():
-            self.ws2812.stop()
-        if self.fan is not None:
-            self.fan.stop()   
-        if self.spc is not None and self.spc.is_ready():
-            self.spc.stop()
-        if self.vibration_switch is not None:
-            self.vibration_switch.stop()
-        if self.pironman_mcu is not None:
-            self.pironman_mcu.stop()
-        if self.pi5_pwr_btn is not None:
-            self.pi5_pwr_btn.stop()
-        if self.rgb_matrix is not None:
-            self.rgb_matrix.stop()
-
-
-    @log_error
-    def on_shutdown(self, reason):
-        if reason != 'None' or reason != None or reason != 0:
-            self.log.info(f"Auto Shutdown reason: {reason}")
-            self.oled.show_shutdown_screen(reason)
-            time.sleep(2)
-            self.clean_up()
-
-            try:
-                from sf_rpi_status import shutdown
-                shutdown()
-            except Exception as e:
-                self.log.error(f"Failed to shutdown: {e}")
-                from os import system
-                system("sudo shutdown -h now")
-
-
-    @log_error
-    def is_fan_enabled(self):
-        from .services.fan_service import FANS
-        return has_common_items(FANS, self.peripherals)
-
-    @log_error
-    def set_on_state_changed(self, callback):
-        self.__on_state_changed__ = callback
-        self.fan.set_on_state_changed(callback)
-
-    @log_error
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self._is_ready
 
     @log_error
-    def update_config(self, config):
+    def update_config(self, config: Dict) -> None:
         self.log.debug(f"Update config: {config}")
-        if 'oled' in self.peripherals:
-            self.oled.update_config(config)
-        if 'ws2812' in self.peripherals:
-            self.ws2812.update_config(config)
-        if self.is_fan_enabled():
-            self.fan.update_config(config)
-        if 'vibration_switch' in self.peripherals:
-            self.vibration_switch.update_config(config)
-        if 'pironman_mcu' in self.peripherals:
-            self.pironman_mcu.update_config(config)
+        self.addons.update_config(config)
+        self.config.update(config)
+    @log_error
+    def start(self) -> None:
+        def run_event_loop():
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
+            self.loop.create_task(self.addons.start())
+            try:
+                self.loop.run_forever()
+            except KeyboardInterrupt:
+                self.log.info("Received shutdown signal")
+            finally:
+                self.loop.run_until_complete(self.addons.stop())
+                self.loop.close()
+            self.log.info("PM Auto started")
+        
+        # 创建并启动线程
+        self.thread = threading.Thread(target=run_event_loop, daemon=True)
+        self.thread.start()
 
     @log_error
-    def start(self):
-        if self.oled is not None and self.oled.is_ready():
-            self.oled.start()
-        if self.ws2812 is not None and self.ws2812.is_ready():
-            self.ws2812.start()
-        if self.fan is not None:
-            self.fan.start()
-        if self.spc is not None and self.spc.is_ready():
-            self.spc.start()
-        if self.vibration_switch is not None:
-            self.vibration_switch.start()
-        if self.pironman_mcu is not None:
-            self.pironman_mcu.start()
-        if self.pi5_pwr_btn is not None:
-            self.pi5_pwr_btn.start()
-        if self.rgb_matrix is not None:
-            self.rgb_matrix.start()
-
-        self.log.info("PM Auto atarted")
-
-    @log_error
-    def stop(self):
-        if self.oled is not None and self.oled.is_ready():
-            self.oled.stop()
-        if self.ws2812 is not None and self.ws2812.is_ready():
-            self.ws2812.stop()
-        if self.fan is not None:
-            self.fan.stop()
-        if self.spc is not None and self.spc.is_ready():
-            self.spc.stop()
-        if self.vibration_switch is not None:
-            self.vibration_switch.stop()
-        if self.pironman_mcu is not None:
-            self.pironman_mcu.stop()
-        if self.pi5_pwr_btn is not None:
-            self.pi5_pwr_btn.stop()
-        if self.rgb_matrix is not None:
-            self.rgb_matrix.stop()
-            
-        self.log.info("PM Auto stoped")
-
+    def stop(self) -> None:
+        if self.loop and self.loop.is_running():
+            # 线程安全地停止事件循环
+            self.loop.call_soon_threadsafe(self.loop.stop)
+        if self.thread and self.thread.is_alive():
+            # 等待线程结束
+            self.thread.join()
+        self.log.info("PM Auto stopped")

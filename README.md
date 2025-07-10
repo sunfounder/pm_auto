@@ -5,6 +5,7 @@ Pironman Auto is a tool to control all peripherals on your Pironman.
 - [PM Auto](#pm-auto)
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Addonlize](#addonlize)
   - [About SunFounder](#about-sunfounder)
   - [Contact us](#contact-us)
 
@@ -44,6 +45,16 @@ config = {
 pm = PMAuto(config)
 pm.start()
 
+```
+
+## Addonlize
+
+```mermaid
+graph TD
+  pm_auto[PM Auto]
+  addon[Addon]
+
+  pm_auto--config-->addon--read_data-->pm_auto
 ```
 
 ## About SunFounder

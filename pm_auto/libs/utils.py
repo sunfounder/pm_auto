@@ -1,6 +1,17 @@
-from pdb import run
 import time
 
+from importlib.resources import files as resource_files
+from os import path
+__package_name__ = __name__.split('.')[0]
+ASSET_PATH = str(resource_files(__package_name__).joinpath('assets'))
+ICON_PATH = path.join(ASSET_PATH, 'icons')
+FONT_PATH  = path.join(ASSET_PATH, 'fonts')
+
+def get_icon(name):
+    return path.join(ICON_PATH, name)
+
+def get_font(name):
+    return path.join(FONT_PATH, name)
 
 def map_value(x, from_min, from_max, to_min, to_max):
     return (x - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
@@ -10,7 +21,8 @@ def log_error(func):
         try:
             return func(self, *args, **kwargs)
         except Exception as e:
-            self.log.exception(str(e))
+            if hasattr(self, 'log'):
+                self.log.exception(str(e))
     return wrapper
 
 def run_command(cmd):

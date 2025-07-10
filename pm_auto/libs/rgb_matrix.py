@@ -7,16 +7,9 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-import random
-import os
+from .utils import get_font
 
-# from pathlib import Path
-# grandparent_dir = Path(__file__).resolve().parent.parent.parent
-# FONT_PATH = str(grandparent_dir) + '/fonts/Minecraftia-Regular.ttf'
-
-from importlib.resources import files as resource_files
-__package_name__ = __name__.split('.')[0]
-FONT_PATH  = str(resource_files(__package_name__).joinpath('fonts/Minecraftia-Regular.ttf'))
+FONT_PATH = get_font('Minecraftia-Regular.ttf')
 
 class RGB_Matrix():
 

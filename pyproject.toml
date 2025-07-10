@@ -21,9 +21,11 @@ dynamic = ["version"]
 packages = [
   "pm_auto",
   "pm_auto.libs",
-  "pm_auto.services",
-  "pm_auto.oled_pages",
-  "pm_auto.rgb_matrix_effects",
+  "pm_auto.addons",
+  "pm_auto.addons.oled",
+  "pm_auto.addons.oled.pages",
+  "pm_auto.addons.rgb_matrix",
+  "pm_auto.addons.rgb_matrix.effects",
   ]
 
 [project.urls]
