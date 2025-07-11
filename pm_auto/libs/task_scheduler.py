@@ -94,9 +94,10 @@ class TaskScheduler:
         """取消所有任务"""
         for task_id in list(self.tasks.keys()):
             self.cancel_task(task_id)
-    
+
     async def stop(self) -> None:
         """停止调度器并清理资源"""
         self._stop_event.set()
         self.cancel_all_tasks()
-        await asyncio.gather(*asyncio.all_tasks(), return_exceptions=True)
+        if self.tasks:
+            await asyncio.gather(*self.tasks.values(), return_exceptions=True)
