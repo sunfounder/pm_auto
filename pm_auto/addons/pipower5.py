@@ -38,6 +38,7 @@ class PiPower5Addon(Addon):
 
         self._button_callback = None
         self._shutdown_callback = None
+        self._is_ready = True
 
     @log_error
     def is_ready(self):
@@ -76,23 +77,28 @@ class PiPower5Addon(Addon):
 
     @log_error
     async def _main(self):
-        self.tasks.run_periodically(self.publish_data, 1)
+        await self.tasks.run_periodically(self.publish_data, 1)
 
         while self.running:
             button_status = self.read_power_btn()
             shutdown_request = self.read_shutdown_request()
 
             if button_status == 'single_click':
-                self.event.publish('pipower5_button_single_click', 'single_click')
+                self.log.debug(f'pipower5_button_click: {button_status}')
+                self.event.publish('pipower5_button_click', 'single_click')
             elif button_status == 'double_click':
+                self.log.debug(f'pipower5_button_double_click: {button_status}')
                 self.event.publish('pipower5_button_double_click', 'double_click')
 
             if self._shutdown_callback is not None:
                 if button_status == 'long_press_2s':
+                    self.log.debug(f'pipower5_button_long_click: {button_status}')
                     self.event.publish('pipower5_button_long_click', 'long_click')
                 elif shutdown_request == 'low_battery':
+                    self.log.debug(f'pipower5_low_battery: {shutdown_request}')
                     self.event.publish('pipower5_low_battery', 'low_battery')
                 elif shutdown_request == 'button':
+                    self.log.debug(f'pipower5_button_shutdown: {shutdown_request}')
                     self.event.publish('pipower5_button_shutdown', 'button')
 
             await asyncio.sleep(self.LOOP_INTERVAL)

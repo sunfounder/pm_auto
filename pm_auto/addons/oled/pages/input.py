@@ -10,8 +10,8 @@ font = get_font('UbuntuSans-Regular.ttf')
 def oled_page_input(oled, data, config):
     global charge_bar_val
 
-    input_voltage = data.get('input_voltage' / 1000, 0)
-    input_current = data.get('input_current' / 1000, 0)
+    input_voltage = data.get('input_voltage', 0) / 1000
+    input_current = data.get('input_current', 0) / 1000
     input_power = input_voltage * input_current
 
     is_plugged = data.get('is_input_plugged_in', 0)

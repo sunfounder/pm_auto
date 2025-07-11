@@ -8,8 +8,8 @@ sunfounder_icon = get_icon('sunfounder.ico')
 def oled_page_output(oled, data, config):
     global charge_bar_val
 
-    output_voltage = data.get('output_voltage' / 1000, 0)   
-    output_current = data.get('output_current' / 1000, 0)
+    output_voltage = data.get('output_voltage', 0) / 1000   
+    output_current = data.get('output_current', 0) / 1000
     output_power = output_voltage * output_current
 
     oled.clear()

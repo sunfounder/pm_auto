@@ -12,8 +12,8 @@ blink_flag = True
 def oled_page_battery(oled, data, config):
     global charge_bar_val, blink_flag
 
-    battery_voltage = data.get('battery_voltage' / 1000, 0)
-    battery_current = data.get('battery_current' / 1000, 0)
+    battery_voltage = data.get('battery_voltage', 0) / 1000
+    battery_current = data.get('battery_current', 0) / 1000
     battery_power = battery_voltage * battery_current
 
     battery_percentage = data.get('battery_percentage', 0)

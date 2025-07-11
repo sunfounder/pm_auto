@@ -117,15 +117,18 @@ class OLEDAddon(Addon):
         self.wake_flag = True
 
     @log_error
-    def wake_page_next(self):
+    def wake_page_next(self, *args, **kwargs):
+        self.log.debug(f'OLED wake or next page')
         self.is_wake_page_next = True
 
     @log_error
-    def page_prev(self):
+    def page_prev(self, *args, **kwargs):
+        self.log.debug(f'OLED prev page')
         self.is_page_prev = True
 
     @log_error
     def sleep(self):
+        self.log.debug(f'OLED sleep')
         self.wake_flag = False
         self.oled.clear()
         self.oled.display()
