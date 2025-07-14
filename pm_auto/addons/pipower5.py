@@ -25,6 +25,10 @@ class PiPower5Addon(Addon):
     REG_PWR_BTN_STATE= 154
     REG_WRITE_POWER_BTN_STATE = 12
 
+    DEFAULT_CONFIG = {
+        'shutdown_percentage': 10,
+    }
+
     @log_error
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,6 +39,10 @@ class PiPower5Addon(Addon):
         if not self.pipower5.is_ready():
             self._is_ready = False
             return
+
+        self.shutdown_percentage = self.pipower5.read_shutdown_percentage()
+        self.log.debug(f'PiPower5 shutdown percentage: {self.shutdown_percentage}')
+        self.event.publish('config_changed', {'shutdown_percentage': self.shutdown_percentage})
 
         self._button_callback = None
         self._shutdown_callback = None
@@ -54,7 +62,8 @@ class PiPower5Addon(Addon):
         patch = {}
         if "shutdown_percentage" in config:
             _percentage = config['shutdown_percentage']
-            self.pipower5.write_shutdown_percentage(_percentage)
+            if not init:
+                self.pipower5.write_shutdown_percentage(_percentage)
             patch['shutdown_percentage'] = _percentage
             self.log.info(f'Set PiPower5 shutdown percentage: {_percentage}')
         return patch
