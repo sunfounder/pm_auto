@@ -42,7 +42,6 @@ class PiPower5Addon(Addon):
 
         self.shutdown_percentage = self.pipower5.read_shutdown_percentage()
         self.log.debug(f'PiPower5 shutdown percentage: {self.shutdown_percentage}')
-        self.event.publish('config_changed', {'shutdown_percentage': self.shutdown_percentage})
 
         self._button_callback = None
         self._shutdown_callback = None
