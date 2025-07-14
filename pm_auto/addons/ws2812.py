@@ -65,45 +65,68 @@ class WS2812Addon(Addon):
 
     @log_error
     def update_config(self, config):
+        '''
+        Update config.
+
+        Args:
+            config (Dict): New config dict.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
+        patch = {}
         if 'rgb_led_count' in config:
-            if not isinstance(config['rgb_led_count'], int):
+            _count = config['rgb_led_count']
+            if not isinstance(_count, int):
                 self.log.error("Invalid rgb_led_count")
-                return
-            self.led_count = config['rgb_led_count']
-            self.log.debug(f"Update LED count: {self.led_count}")
+            else:
+                self.led_count = _count
+                patch['rgb_led_count'] = self.led_count
+                self.log.info(f"Update LED count: {self.led_count}")
         if 'rgb_enable' in config:
-            if not isinstance(config['rgb_enable'], bool):
-                self.log.error("Invalid rgb_enable")
-                return
-            self.enable = config['rgb_enable']
-            self.log.debug(f"Update RGB enable: {self.enable}")
+            _enable = config['rgb_enable']
+            if not isinstance(_enable, bool):
+                self.log.error(f"Invalid rgb_enable: {_enable}")
+            else:
+                self.enable = _enable
+                patch['rgb_enable'] = self.enable
+                self.log.info(f"Update RGB enable: {self.enable}")
         if 'rgb_color' in config:
-            if not isinstance(config['rgb_color'], str):
-                self.log.error("Invalid rgb_color")
-                return
-            self.color = self.hex_to_rgb(config['rgb_color'])
-            self.log.debug(f"Update RGB color: {self.color}")
+            _color = config['rgb_color']
+            if not isinstance(_color, str):
+                self.log.error(f"Invalid rgb_color: {_color}")
+            else:
+                self.color = self.hex_to_rgb(_color)
+                patch['rgb_color'] = self.color
+                self.log.info(f"Update RGB color: {self.color}")
         if 'rgb_brightness' in config:
-            if not isinstance(config['rgb_brightness'], int):
-                self.log.error("Invalid rgb_brightness")
-                return
-            self.brightness = config['rgb_brightness']
-            self.log.debug(f"Update RGB brightness: {self.brightness}")
+            _brightness = config['rgb_brightness']
+            if not isinstance(_brightness, int):
+                self.log.error(f"Invalid rgb_brightness: {_brightness}")
+            else:
+                self.brightness = _brightness
+                patch['rgb_brightness'] = self.brightness
+                self.log.info(f"Update RGB brightness: {self.brightness}")
         if 'rgb_speed' in config:
-            if not isinstance(config['rgb_speed'], int):
-                self.log.error("Invalid rgb_speed")
-                return
-            self.speed = config['rgb_speed']
-            self.log.debug(f"Update RGB speed: {self.speed}")
+            _speed = config['rgb_speed']
+            if not isinstance(_speed, int):
+                self.log.error(f"Invalid rgb_speed: {_speed}")
+            else:
+                self.speed = _speed
+                patch['rgb_speed'] = self.speed
+                self.log.info(f"Update RGB speed: {self.speed}")
         if 'rgb_style' in config:
-            if not isinstance(config['rgb_style'], str) or config['rgb_style'] not in RGB_STYLES:
-                self.log.error("Invalid rgb_style")
-                return
-            self.style = config['rgb_style']
-            self.log.debug(f"Update RGB style: {self.style}")
+            _style = config['rgb_style']
+            if not isinstance(_style, str) or _style not in RGB_STYLES:
+                self.log.error(f"Invalid rgb_style: {_style}")
+            else:
+                self.style = _style
+                patch['rgb_style'] = self.style
+                self.log.info(f"Update RGB style: {self.style}")
+        return patch
+
 
     @log_error
-
     def hex_to_rgb(self, hex):
         ''' str or hex, eg: 'ffffff', '#ffffff', '#FFFFFF' '''
         try:

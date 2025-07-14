@@ -1,4 +1,4 @@
-from ..libs.color import Color
+from pm_auto.libs.color import Color
 
 firsthue = 0
 
@@ -11,7 +11,7 @@ list = [[0, 0, 0, 7],
         [6, 0, 6, 7], 
         [7, 0, 7, 7]]
 
-def rainbow(rgb_matrix, config, reverse=False):
+def rainbow(self, rgb_matrix, reverse=False):
     global firsthue, list
 
     if reverse:
@@ -32,5 +32,5 @@ def rainbow(rgb_matrix, config, reverse=False):
     if firsthue > 1530:
         firsthue = 0
 
-def rainbow_reverse(rgb_matrix, config):
-    rainbow(rgb_matrix, config, reverse=True)
+def rainbow_reverse(self, rgb_matrix):
+    rainbow(self, rgb_matrix, reverse=True)

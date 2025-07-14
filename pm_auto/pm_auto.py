@@ -40,7 +40,6 @@ class PMAuto:
         self._is_ready = False
         # 创建全局事件总线实例
         self.event = EventBus(log=log)
-        self.config = config
         self.peripherals = peripherals or []
         self.data = {}
         self.thread = None  # 添加线程属性
@@ -52,7 +51,7 @@ class PMAuto:
         # Initialize addons
         self.addons = Addons(
             peripherals=self.peripherals,
-            config=self.config,
+            config=config,
             event=self.event,
             log=self.log)
 
@@ -78,10 +77,21 @@ class PMAuto:
         return self._is_ready
 
     @log_error
-    def update_config(self, config: Dict) -> None:
-        self.log.debug(f"Update config: {config}")
-        self.addons.update_config(config)
-        self.config.update(config)
+    def update_config(self, config: Dict) -> Dict:
+        '''
+        Update config.
+
+        Args:
+            config (Dict): Config dict.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
+        self.log.info(f"####PM Auto Update config: {config}")
+        patch = self.addons.update_config(config)
+        self.log.info(f"####PM Auto Update config patch: {patch}")
+        return patch
+
     @log_error
     def start(self) -> None:
         def run_event_loop():

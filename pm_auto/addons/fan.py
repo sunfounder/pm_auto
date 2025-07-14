@@ -93,24 +93,59 @@ class FanAddon(Addon):
 
     @log_error
     def update_config(self, config, init=False):
+        '''
+        Update config.
+
+        Args:
+            config (Dict): New config dict.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
+        patch = {}
         if "gpio_fan_pin" in config:
-            self.log.debug(f"Update gpio_fan_pin to {config['gpio_fan_pin']}")
-            self.config["gpio_fan_pin"] = config["gpio_fan_pin"]
+            _pin = config['gpio_fan_pin']
             if not init and self.gpio_fan.is_ready():
-                self.gpio_fan.change_pin(config["gpio_fan_pin"])
+                success = self.gpio_fan.change_pin(config["gpio_fan_pin"])
+                if success:
+                    patch['gpio_fan_pin'] = _pin
+                    self.log.info(f"Update gpio_fan_pin to {_pin}")
+                else:
+                    self.log.error(f"Change gpio_fan_pin to {_pin} failed")
+            else:
+                patch['gpio_fan_pin'] = _pin
         if "gpio_fan_mode" in config:
-            self.log.debug(f"Update gpio_fan_mode to {config['gpio_fan_mode']}")
-            self.config["gpio_fan_mode"] = config["gpio_fan_mode"]
+            _mode = config['gpio_fan_mode']
+            if _mode in GPIO_FAN_MODES:
+                self.log.info(f"Update gpio_fan_mode to {_mode}")
+                patch['gpio_fan_mode'] = _mode
+            else:
+                self.log.error(f"Invalid gpio_fan_mode: {_mode}")
         if "gpio_fan_led" in config:
-            self.log.debug(f"Update gpio_fan_led to {config['gpio_fan_led']}")
-            self.config["gpio_fan_led"] = config["gpio_fan_led"]
-            if not init and self.gpio_fan.is_ready():
-                self.gpio_fan.set_led(config["gpio_fan_led"])
+            _led = config['gpio_fan_led']
+            if _led in ['follow', 'on', 'off']:
+                if not init and self.gpio_fan.is_ready():
+                    success = self.gpio_fan.set_led(_led)
+                    if success:
+                        self.log.info(f"Update gpio_fan_led to {_led}")
+                        patch['gpio_fan_led'] = _led
+                    else:
+                        self.log.error(f"Change gpio_fan_led to {_led} failed")
+                else:
+                    patch['gpio_fan_led'] = _led
+            else:
+                self.log.error(f"Invalid gpio_fan_led: {_led}")
         if "gpio_fan_led_pin" in config:
-            self.log.debug(f"Update gpio_fan_led_pin to {config['gpio_fan_led_pin']}")
-            self.config["gpio_fan_led_pin"] = config["gpio_fan_led_pin"]
+            _led_pin = config['gpio_fan_led_pin']
             if not init and self.gpio_fan.is_ready():
-                self.gpio_fan.change_led_pin(config["gpio_fan_led_pin"])
+                success = self.gpio_fan.change_led_pin(_led_pin)
+                if success:
+                    self.log.info(f"Update gpio_fan_led_pin to {_led_pin}")
+                    patch['gpio_fan_led_pin'] = _led_pin
+                else:
+                    self.log.error(f"Change gpio_fan_led_pin to {_led_pin} failed")
+            else:
+                patch['gpio_fan_led_pin'] = _led_pin
 
     @log_error
     def get_cpu_temperature(self):
@@ -255,10 +290,12 @@ class GPIOFan(Fan):
             import gpiozero
             self.fan = gpiozero.DigitalOutputDevice(pin)
             self._is_ready = True
+            return True
         except Exception as e:
             self.log.error(f"Change pin error: {e}")
             self._is_ready = False
-
+            return False
+            
     def change_led_pin(self, led_pin):
         self.led.close()
         self.led_pin = led_pin
@@ -267,9 +304,12 @@ class GPIOFan(Fan):
             self.led = gpiozero.DigitalOutputDevice(led_pin)
             self.led.off()
             self._is_ready = True
+            return True
         except Exception as e:
             self.log.error(f"Change led pin error: {e}")
             self._is_ready = False
+            return False
+
 
     @log_error
     @check_ready
@@ -292,6 +332,8 @@ class GPIOFan(Fan):
                 self.led.value = 0
             else:
                 self.log.warning(f"Invalid led value: {value}")
+                return False
+        return True
 
     @log_error
     @check_ready

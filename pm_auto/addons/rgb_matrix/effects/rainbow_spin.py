@@ -109,10 +109,10 @@ def create_hsv_wheel(width=16, height=16):
 
 hsv_wheel_16_16 = create_hsv_wheel(16, 16)
 
-def rainbow_spin(rgb_matrix, config):
+def rainbow_spin(self, rgb_matrix):
     global frame_index
 
-    speed = config['rgb_matrix_speed']
+    speed = self.speed
     interval = 1 / speed
 
     angle = frame_index * (360 / MAX_FRAME)

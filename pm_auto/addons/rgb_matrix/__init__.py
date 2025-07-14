@@ -42,40 +42,62 @@ class RGBMatrixAddon(Addon):
 
     @log_error
     def update_config(self, config, init=False):
+        '''
+        Update config.
+
+        Args:
+            config (Dict): New config dict.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
+        patch = {}
         if 'rgb_matrix_enable' in config:
             _enable = bool(config['rgb_matrix_enable'])
-            self.config['rgb_matrix_enable'] = _enable
+            self.enable = _enable
+            patch['rgb_matrix_enable'] = _enable
             self.log.debug(f"Update RGB Matrix enable: {_enable}")
         if 'rgb_matrix_style' in config:
-            if not isinstance(config['rgb_matrix_style'], str) or config['rgb_matrix_style'] not in EFFECT_LIST:
+            _style = config['rgb_matrix_style']
+            if not isinstance(_style, str) or _style not in EFFECT_LIST:
                 self.log.error("Invalid rgb_matrix_style")
-                return
-            self.config['rgb_matrix_style'] = config['rgb_matrix_style']
-            self.log.debug(f"Update RGB Matrix style: {self.config['rgb_matrix_style']}")
+            else:
+                self.style = _style
+                patch['rgb_matrix_style'] = _style
+                self.log.debug(f"Update RGB Matrix style: {self.style}")
         if 'rgb_matrix_color' in config:
-            if not isinstance(config['rgb_matrix_color'], str):
+            _color = config['rgb_matrix_color']
+            if not isinstance(_color, str):
                 self.log.error("Invalid rgb_matrix_color")
-                return
-            self.config['rgb_matrix_color'] = Color.hex_to_rgb(config['rgb_matrix_color'])
-            self.log.debug(f"Update RGB Matrix color: {self.config['rgb_matrix_color']}")
+            else:
+                self.color = _color
+                patch['rgb_matrix_color'] = _color
+                self.log.debug(f"Update RGB Matrix color: {self.color}")
         if 'rgb_matrix_color2' in config:
-            if not isinstance(config['rgb_matrix_color2'], str):
+            _color2 = config['rgb_matrix_color2']
+            if not isinstance(_color2, str):
                 self.log.error("Invalid rgb_matrix_color2")
-                return
-            self.config['rgb_matrix_color2'] = Color.hex_to_rgb(config['rgb_matrix_color2'])
-            self.log.debug(f"Update RGB Matrix color2: {self.config['rgb_matrix_color2']}")
+            else:
+                self.color2 = _color2
+                patch['rgb_matrix_color2'] = _color2
+                self.log.debug(f"Update RGB Matrix color2: {self.color2}")
         if 'rgb_matrix_brightness' in config:
-            if not isinstance(config['rgb_matrix_brightness'], int):
+            _brightness = config['rgb_matrix_brightness']
+            if not isinstance(_brightness, int):
                 self.log.error("Invalid rgb_matrix_brightness")
-                return
-            self.config['rgb_matrix_brightness'] = config['rgb_matrix_brightness']
-            self.log.debug(f"Update RGB Matrix brightness: {self.config['rgb_matrix_brightness']}")
+            else:
+                self.brightness = _brightness
+                patch['rgb_matrix_brightness'] = _brightness
+                self.log.debug(f"Update RGB Matrix brightness: {self.brightness}")
         if 'rgb_matrix_speed' in config:
-            if not isinstance(config['rgb_matrix_speed'], int):
+            _speed = config['rgb_matrix_speed']
+            if not isinstance(_speed, int):
                 self.log.error("Invalid rgb_matrix_speed")
-                return
-            self.config['rgb_matrix_speed'] = config['rgb_matrix_speed']
-            self.log.debug(f"Update RGB Matrix speed: {self.config['rgb_matrix_speed']}")
+            else:
+                self.speed = _speed
+                patch['rgb_matrix_speed'] = _speed
+                self.log.debug(f"Update RGB Matrix speed: {self.speed}")
+        return patch
 
     @log_error
     def init_effect(self):
@@ -103,7 +125,7 @@ class RGBMatrixAddon(Addon):
                     self.log.error(f'RGB_Matrix Style error: {self.style}')
                     await asyncio.sleep(5)
                     continue
-                effect(self.rgb_matrix, self.config)
+                effect(self, self.rgb_matrix)
                 await asyncio.sleep(.01)
             except Exception as e:
                 self.log.error('RGB_Matrix Service error:')

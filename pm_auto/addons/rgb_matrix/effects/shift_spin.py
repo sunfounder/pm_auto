@@ -7,10 +7,10 @@ DEFAULT_COLOR = (255, 0, 0)
 frame_index = 0
 
 # 主函数
-def shift_spin(rgb_matrix, config):
+def shift_spin(self, rgb_matrix):
     global frame_index
 
-    speed = config['rgb_matrix_speed']
+    speed = self.speed
     interval = 1 / speed
 
     angle = frame_index * (360 / MAX_FRAME)

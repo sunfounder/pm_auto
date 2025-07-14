@@ -58,18 +58,18 @@ def rotate_and_crop(image_array, angle, output_size=(8, 4)):
 
 _matrix = []
 
-def spin(rgb_matrix, config, single=True):
+def spin(self, rgb_matrix, single=True):
     global frame_index, _matrix
 
     if _matrix == []:
-        color = tuple(config.get('rgb_matrix_color', DEFAULT_COLOR)) or DEFAULT_COLOR
+        color = tuple(self.color) or DEFAULT_COLOR
         if single:
             _matrix = draw_2_half_rectangle_matrix(color=color)
         else:
-            color2 = tuple(config.get('rgb_matrix_color2', DEFAULT_COLOR2)) or DEFAULT_COLOR2
+            color2 = tuple(self.color2) or DEFAULT_COLOR2
             _matrix = draw_2_half_rectangle_matrix(color=color, color2=color2)
 
-    speed = config['rgb_matrix_speed']
+    speed = self.speed
     interval = 1 / speed
 
     angle = frame_index * (360 / MAX_FRAME)
@@ -87,5 +87,5 @@ def spin(rgb_matrix, config, single=True):
     rgb_matrix.display()
     time.sleep(interval)
 
-def dual_spin(rgb_matrix, config):
-    spin(rgb_matrix, config, single=False)
+def dual_spin(self, rgb_matrix):
+    spin(self, rgb_matrix, single=False)

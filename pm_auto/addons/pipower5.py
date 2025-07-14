@@ -41,6 +41,25 @@ class PiPower5Addon(Addon):
         self._is_ready = True
 
     @log_error
+    def update_config(self, config, init=False):
+        '''
+        Update config.
+
+        Args:
+            config (Dict): New config dict.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
+        patch = {}
+        if "shutdown_percentage" in config:
+            _percentage = config['shutdown_percentage']
+            self.pipower5.write_shutdown_percentage(_percentage)
+            patch['shutdown_percentage'] = _percentage
+            self.log.info(f'Set PiPower5 shutdown percentage: {_percentage}')
+        return patch
+
+    @log_error
     def is_ready(self):
         return self._is_ready
 

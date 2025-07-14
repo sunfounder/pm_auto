@@ -62,8 +62,19 @@ class Addons:
                 self.log.error("Failed to initialize %s service", Addon.__name__)
 
     def update_config(self, config: Dict) -> None:
+        '''
+        Update config.
+
+        Args:
+            config (Dict): Config dict.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
+        patch = {}
         for addon in self.addons:
-            addon.update_config(config)
+            patch.update(addon.update_config(config))
+        return patch
 
     async def start(self) -> None:
         # 并行启动所有插件
