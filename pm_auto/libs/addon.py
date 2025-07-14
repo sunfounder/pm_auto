@@ -26,8 +26,19 @@ class Addon:
         return self._is_ready
     
     @log_error
-    def update_config(self, config: Dict, init: bool = False) -> None:
+    def update_config(self, config: Dict, init: bool = False) -> Dict:
+        '''
+        Update config for addon.
+
+        Args:
+            config (Dict): Config dict.
+            init (bool): Whether to update config for init.
+
+        Returns:
+            A dict of config patch to update the config file.
+        '''
         self.config = config
+        return {}
 
     @log_error
     async def start(self) -> None:

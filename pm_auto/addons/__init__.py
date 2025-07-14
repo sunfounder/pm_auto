@@ -73,7 +73,9 @@ class Addons:
         '''
         patch = {}
         for addon in self.addons:
-            patch.update(addon.update_config(config))
+            new_patch = addon.update_config(config)
+            self.log.critical(f"Update config for {addon.__class__.__name__}: {new_patch}")
+            patch.update(new_patch)
         return patch
 
     async def start(self) -> None:

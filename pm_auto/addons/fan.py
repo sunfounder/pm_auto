@@ -146,6 +146,7 @@ class FanAddon(Addon):
                     self.log.error(f"Change gpio_fan_led_pin to {_led_pin} failed")
             else:
                 patch['gpio_fan_led_pin'] = _led_pin
+        return patch
 
     @log_error
     def get_cpu_temperature(self):

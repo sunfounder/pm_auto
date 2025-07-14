@@ -87,9 +87,8 @@ class PMAuto:
         Returns:
             A dict of config patch to update the config file.
         '''
-        self.log.info(f"####PM Auto Update config: {config}")
         patch = self.addons.update_config(config)
-        self.log.info(f"####PM Auto Update config patch: {patch}")
+        self.log.info(f"PM Auto Update config patch: {patch}")
         return patch
 
     @log_error
