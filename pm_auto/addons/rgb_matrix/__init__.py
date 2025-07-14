@@ -30,16 +30,6 @@ class RGBMatrixAddon(Addon):
             return
         self._is_ready = True
 
-        self.enable = self.config['rgb_matrix_enable']
-        self.style = self.config['rgb_matrix_style']
-        self.color = self.config['rgb_matrix_color']
-        self.color2 = self.config['rgb_matrix_color2']
-        self.brightness = self.config['rgb_matrix_brightness']
-        self.speed = self.config['rgb_matrix_speed']
-
-        self.running = False
-        self.thread = None
-
     @log_error
     def update_config(self, config, init=False):
         '''

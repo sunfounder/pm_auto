@@ -2,7 +2,7 @@ from pm_auto.libs.ssd1306 import SSD1306
 from pm_auto.libs.utils import log_error
 from pm_auto.libs.addon import Addon
 
-from .pages.power_off import oled_page_power_off
+from .pages import power_off_page
 from .pages import get_pages
 
 import time
@@ -36,6 +36,7 @@ class OLEDAddon(Addon):
 
     @log_error
     def __init__(self, *args, **kwargs):
+        print(f"OLED **kwargs: {kwargs}")
         super().__init__(*args, **kwargs)
 
         try:
@@ -46,11 +47,6 @@ class OLEDAddon(Addon):
         self._is_ready = self.oled.is_ready()
 
         self.available_pages = get_available_pages(self.peripherals)
-        self.enable = self.config['oled_enable']
-        self.rotation = self.config['oled_rotation']
-        self.sleep_timeout = self.config['oled_sleep_timeout']
-        self.oled_pages = self.config['oled_pages']
-        self.scroll_interval = self.config['scroll_interval']
 
         self.wake_flag = True
         self.wake_start_time = 0
@@ -62,10 +58,10 @@ class OLEDAddon(Addon):
         self.event.subscribe("oled_wake_page_next", self.wake_page_next)
         self.event.subscribe("oled_page_prev", self.page_prev)
         self.event.subscribe("shutdown", self.show_shutdown_screen)
-        self.event.subscribe("data_changed", self.update_data)
+        self.event.subscribe("data_changed", self.handle_data_changed)
 
     @log_error
-    def update_data(self, data):
+    def handle_data_changed(self, data):
         self.data.update(data)
 
     @log_error
@@ -129,6 +125,8 @@ class OLEDAddon(Addon):
                     self.log.warning(f"Invalid oled page {page}, must be in {self.available_pages}")
                 else:
                     new_pages.append(page)
+            if not init:
+                self.update_pages(pages=new_pages)
             new_pages = list(set(new_pages))
             self.oled_pages = new_pages
             patch['oled_pages'] = new_pages
@@ -168,13 +166,17 @@ class OLEDAddon(Addon):
         self.oled.display()
 
     @log_error
-    async def _main(self):
+    def update_pages(self, pages=None):
+        pages = pages or self.oled_pages
+        self.pages = get_pages(pages)
+        self.log.debug(f'Update pages to: {self.pages}')
+        self.page_index = 0
+        self.last_page_index = -1
+        self.wake()
 
-        self.pages = get_pages(self.oled_pages)
-    
-        pages_len = len(self.pages)
-        page_index = 0
-        last_page_index = -1
+    @log_error
+    async def _main(self):
+        self.update_pages()
         last_refresh_time = 0
 
         if self.oled is None or not self.oled.is_ready():
@@ -191,11 +193,11 @@ class OLEDAddon(Addon):
                 continue
             
             if self.is_power_off == True:
-                await oled_page_power_off(self.oled)
-                await asyncio.sleep(.5)
+                power_off_page(self.oled)
+                await asyncio.sleep(1)
                 continue
 
-            if pages_len < 1:
+            if len(self.pages) < 1:
                 self.oled.draw_text(f'config error', 64, 20, align='center', size=16)
                 self.oled.display()
                 continue
@@ -204,26 +206,26 @@ class OLEDAddon(Addon):
                 if not self.wake_flag:
                     self.log.debug("OLED service waking up")
                     self.wake_flag = True
-                    last_page_index = -1
+                    self.last_page_index = -1
                 else:
-                    page_index += 1
-                    if page_index >= len(self.pages):
-                        page_index = 0
+                    self.page_index += 1
+                    if self.page_index >= len(self.pages):
+                        self.page_index = 0
                 self.wake_start_time = time.time()
                 self.is_wake_page_next = False
             elif self.is_page_prev:
                 if self.wake_flag:
-                    page_index -= 1
-                    if page_index < 0:
-                        page_index = len(self.pages) - 1
+                    self.page_index -= 1
+                    if self.page_index < 0:
+                        self.page_index = len(self.pages) - 1
                     self.wake_start_time = time.time()
                 self.is_page_prev = False
                     
             if self.wake_flag:
-                if last_page_index != page_index or time.time() - last_refresh_time > self.REFRESH_INTERVAL:
-                    last_page_index = page_index
+                if self.last_page_index != self.page_index or time.time() - last_refresh_time > self.REFRESH_INTERVAL:
+                    self.last_page_index = self.page_index
                     last_refresh_time = time.time()
-                    self.pages[page_index](self.oled, self.data, self.config)
+                    self.pages[self.page_index](self.oled, self.data, self.config)
 
                 if time.time() - self.wake_start_time > self.sleep_timeout:
                     self.log.debug("OLED sleep timeout, sleeping")

@@ -37,7 +37,6 @@ class Addon:
         Returns:
             A dict of config patch to update the config file.
         '''
-        self.config = config
         return {}
 
     @log_error

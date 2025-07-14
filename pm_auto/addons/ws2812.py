@@ -31,11 +31,6 @@ class WS2812Addon(Addon):
         super().__init__(*args, **kwargs)
 
         self.led_count = 8
-        self.color = None
-        self.speed = None
-        self.style = None
-        self.enable = None
-        self.brightness = None
 
         self.strip = None
         self.counter = 0
