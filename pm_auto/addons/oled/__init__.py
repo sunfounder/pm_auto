@@ -36,7 +36,6 @@ class OLEDAddon(Addon):
 
     @log_error
     def __init__(self, *args, **kwargs):
-        print(f"OLED **kwargs: {kwargs}")
         super().__init__(*args, **kwargs)
 
         try:
