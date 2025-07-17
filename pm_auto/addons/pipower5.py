@@ -114,7 +114,7 @@ class PiPower5Addon(Addon):
 
     @log_error
     async def _main(self):
-        await self.service.loop()
+        await self.service.main()
 
     @log_error
     async def _start(self):
