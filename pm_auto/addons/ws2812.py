@@ -59,12 +59,14 @@ class WS2812Addon(Addon):
         self._is_ready = True
 
     @log_error
-    def update_config(self, config):
+    def update_config(self, config, init=False):
+
         '''
         Update config.
 
         Args:
             config (Dict): New config dict.
+            init (bool): True if init, False otherwise.
 
         Returns:
             A dict of config patch to update the config file.
