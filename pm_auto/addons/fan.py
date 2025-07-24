@@ -116,7 +116,7 @@ class FanAddon(Addon):
                 patch['gpio_fan_pin'] = _pin
         if "gpio_fan_mode" in config:
             _mode = config['gpio_fan_mode']
-            if _mode in GPIO_FAN_MODES:
+            if _mode in range(len(GPIO_FAN_MODES)):
                 self.log.info(f"Update gpio_fan_mode to {_mode}")
                 patch['gpio_fan_mode'] = _mode
             else:

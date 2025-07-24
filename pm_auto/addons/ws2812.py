@@ -40,7 +40,6 @@ class WS2812Addon(Addon):
             self.log.error("SPI not enabled")
         else:
             try:
-                self.update_config(config)
                 self.init()
             except Exception as e:
                 self.log.error("Failed to initialize WS2812 Service: %s" % e)
