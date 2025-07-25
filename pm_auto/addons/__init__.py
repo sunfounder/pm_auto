@@ -42,7 +42,7 @@ class Addons:
     """
     插件管理器 - 异步版本
     """
-    def __init__(self, peripherals=None, config=None, event=None, log=None):
+    def __init__(self, peripherals=None, config=None, device_info=None, event=None, log=None):
         self.log = log or logging.getLogger(__name__)
         self._is_ready = False
         # 创建全局事件总线实例
@@ -51,17 +51,22 @@ class Addons:
         self.peripherals = peripherals or []
 
         # Initialize addons
-        self.addons = []
+        self.addons = {}
         for Addon in get_addons(peripherals):
-            self.log.debug("Initializing %s service", Addon.__name__)
-            addon = Addon(config=self.config, event=self.event, peripherals=peripherals, log=log)
+            name = Addon.__name__.replace('Addon', '').lower()
+            addon = Addon(config=self.config, event=self.event, device_info=device_info, peripherals=peripherals, log=log)
             if addon.is_ready():
                 self.log.info("%s service initialized", Addon.__name__)
-                self.addons.append(addon)
+                self.addons[name] = addon
             else:
                 self.log.error("Failed to initialize %s service", Addon.__name__)
 
-    def update_config(self, config: Dict) -> None:
+    def __getattr__(self, name: str):
+        if name in self.addons:
+            return self.addons[name]
+        raise AttributeError(f"'Addons' object has no attribute '{name}'")
+
+    def update_config(self, config: Dict) -> Dict:
         '''
         Update config.
 
@@ -72,17 +77,17 @@ class Addons:
             A dict of config patch to update the config file.
         '''
         patch = {}
-        for addon in self.addons:
+        for addon in self.addons.values():
             new_patch = addon.update_config(config)
             patch.update(new_patch)
         return patch
 
     async def start(self) -> None:
         # 并行启动所有插件
-        await asyncio.gather(*[addon.start() for addon in self.addons])
+        await asyncio.gather(*[addon.start() for addon in self.addons.values()])
         self.log.info("Addons started")
 
     async def stop(self) -> None:
         # 并行停止所有插件
-        await asyncio.gather(*[addon.stop() for addon in self.addons])
+        await asyncio.gather(*[addon.stop() for addon in self.addons.values()])
         self.log.info("Addons stopped")

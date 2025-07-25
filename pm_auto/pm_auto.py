@@ -35,9 +35,10 @@ DEFAULT_CONFIG = {
 }
 
 class PMAuto:
-    def __init__(self, config=DEFAULT_CONFIG, peripherals=None, event_map=None, log=None):
+    def __init__(self, config=DEFAULT_CONFIG, device_info=None, peripherals=None, event_map=None, log=None):
         self.log = log or logging.getLogger(__name__)
         self._is_ready = False
+        self.device_info = device_info
         # 创建全局事件总线实例
         self.event = EventBus(log=log)
         self.peripherals = peripherals or []
@@ -51,6 +52,7 @@ class PMAuto:
         # Initialize addons
         self.addons = Addons(
             peripherals=self.peripherals,
+            device_info=self.device_info,
             config=config,
             event=self.event,
             log=self.log)
@@ -63,6 +65,10 @@ class PMAuto:
         
         self.event.subscribe("before_shutdown", self.stop)
         self.event.subscribe("data_changed", self.handle_data_changed)
+
+    @log_error
+    def test_smtp(self):
+        return self.addons.pipower5.test_smtp()
 
     @log_error
     def handle_data_changed(self, data: Dict) -> None:
@@ -87,8 +93,10 @@ class PMAuto:
         Returns:
             A dict of config patch to update the config file.
         '''
+        self.log.info(f"PM Auto new config: {config}")
         patch = self.addons.update_config(config)
-        self.log.info(f"PM Auto Update config patch: {patch}")
+        if len(patch) > 0:
+            self.log.info(f"PM Auto Update config patch: {patch}")
         return patch
 
     @log_error

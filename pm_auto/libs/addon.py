@@ -11,8 +11,9 @@ class Addon:
     """
     DEFAULT_CONFIG = {}
 
-    def __init__(self, config=None, event: EventBus=None, peripherals: List[str] = None, log: Optional[logging.Logger] = None):
+    def __init__(self, config=None, event: EventBus=None, device_info: Dict = None, peripherals: List[str] = None, log: Optional[logging.Logger] = None):
         self.log = log or logging.getLogger(__name__)
+        self.device_info = device_info
         self._is_ready = False
         self.config = self.DEFAULT_CONFIG.copy()
         self.event = event

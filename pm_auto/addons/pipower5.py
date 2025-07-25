@@ -1,6 +1,5 @@
 from pm_auto.libs.utils import log_error
 from pm_auto.libs.addon import Addon
-import asyncio
 
 class PiPower5Addon(Addon):
     LOOP_INTERVAL = 0.1 # 100ms
@@ -15,9 +14,9 @@ class PiPower5Addon(Addon):
     @log_error
     def __init__(self, *args, config=None, log=None, **kwargs):
         super().__init__(*args, **kwargs)
-
+        name = self.device_info['name']
         from pipower5.pipower5_service import PiPower5Service
-        self.service = PiPower5Service(config=config, log=log)
+        self.service = PiPower5Service(config=config, device_name=name, log=log)
         if not self.service.is_ready():
             self.log.error('PiPower5 Init error')
             return
@@ -36,6 +35,10 @@ class PiPower5Addon(Addon):
         self.service.set_on_data_changed(self.handle_data_changed)
 
         self._is_ready = True
+
+    @log_error
+    def test_smtp(self):
+        return self.service.test_smtp()
 
     @log_error
     def handle_button_click(self, button_state):
