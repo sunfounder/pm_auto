@@ -37,7 +37,7 @@ class PironmanMcuAddon(Addon):
                 self.event.publish("pironman_mcu_button_long_press")
             if shutdown_request == ShutdownReason.BUTTON:
                 self.log.info("Pironman MCU button shutdown request")
-                self.event.publish("pironman_mcu_shutdown_request_button")
+                self.event.publish("pironman_mcu_shutdown_request_button", "button")
             await asyncio.sleep(INTERVAL)
 
     @log_error

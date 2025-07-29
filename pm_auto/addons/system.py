@@ -29,7 +29,11 @@ class SystemAddon(Addon):
         self._is_ready = True
 
     @log_error
-    def _on_shutdown(self, reason):
+    def _on_shutdown(self, *args):
+        if len(args) == 0:
+            reason = 'None'
+        else:
+            reason = args[0]
         if reason != 'None' or reason != None or reason != 0:
             self.log.info(f"Shutdown reason: {reason}")
             self.event.publish('before_shutdown', reason)
