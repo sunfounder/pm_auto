@@ -72,6 +72,8 @@ def format_bytes(size, to_unit=None, auto_threshold=1024):
 def has_common_items(list1, list2):
     return bool(set(list1) & set(list2))
 
+def constrain(value, min_value, max_value):
+    return max(min(value, max_value), min_value)
 
 class DebounceRunner():
     ''' Lazy reader. Read something in a given interval,

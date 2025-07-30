@@ -1,5 +1,5 @@
 from pm_auto.libs.ssd1306 import SSD1306
-from pm_auto.libs.utils import log_error
+from pm_auto.libs.utils import log_error, constrain
 from pm_auto.libs.addon import Addon
 
 from .pages import power_off_page
@@ -104,11 +104,11 @@ class OLEDAddon(Addon):
             _timeout = int(config['oled_sleep_timeout'])
 
             if _timeout < self.MIN_SLEEP_TIMEOUT or _timeout > self.MAX_SLEEP_TIMEOUT:
-                self.log.error(f"Invalid sleep timeout value, must be between {self.MIN_SLEEP_TIMEOUT} and {self.MAX_SLEEP_TIMEOUT}")
-            else:
-                self.sleep_timeout = _timeout
-                patch['oled_sleep_timeout'] = _timeout
-                self.log.debug(f"Update oled_sleep_timeout to {_timeout}")
+                self.log.warning(f"Invalid sleep timeout value, must be between {self.MIN_SLEEP_TIMEOUT} and {self.MAX_SLEEP_TIMEOUT}")
+                _timeout = constrain(_timeout, self.MIN_SLEEP_TIMEOUT, self.MAX_SLEEP_TIMEOUT)
+            self.sleep_timeout = _timeout
+            patch['oled_sleep_timeout'] = _timeout
+            self.log.debug(f"Update oled_sleep_timeout to {_timeout}")
         if "temperature_unit" in config:
             _unit = config['temperature_unit']
             if _unit not in ['C', 'F']:
