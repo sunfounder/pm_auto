@@ -63,7 +63,7 @@ class PMAuto:
         for pub_event_name, sub_event_name in self.event_map.items():
             self.event.connect(pub_event_name, sub_event_name)
         
-        self.event.subscribe("before_shutdown", self.stop)
+        self.event.subscribe("before_shutdown", self.handle_before_shutdown)
         self.event.subscribe("data_changed", self.handle_data_changed)
 
     @log_error
@@ -73,6 +73,10 @@ class PMAuto:
     @log_error
     def handle_data_changed(self, data: Dict) -> None:
         self.data.update(data)
+
+    @log_error
+    def handle_before_shutdown(self, reason):
+        pass
 
     @log_error
     def read(self) -> Dict:
