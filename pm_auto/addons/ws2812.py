@@ -78,7 +78,7 @@ class WS2812Addon(Addon):
             else:
                 self.led_count = _count
                 patch['rgb_led_count'] = self.led_count
-                self.log.info(f"Update LED count: {self.led_count}")
+                self.log.debug(f"Update LED count: {self.led_count}")
         if 'rgb_enable' in config:
             _enable = config['rgb_enable']
             if not isinstance(_enable, bool):
@@ -86,7 +86,7 @@ class WS2812Addon(Addon):
             else:
                 self.enable = _enable
                 patch['rgb_enable'] = self.enable
-                self.log.info(f"Update RGB enable: {self.enable}")
+                self.log.debug(f"Update RGB enable: {self.enable}")
         if 'rgb_color' in config:
             _color = config['rgb_color']
             if not isinstance(_color, str):
@@ -94,7 +94,7 @@ class WS2812Addon(Addon):
             else:
                 self.color = self.hex_to_rgb(_color)
                 patch['rgb_color'] = self.color
-                self.log.info(f"Update RGB color: {self.color}")
+                self.log.debug(f"Update RGB color: {self.color}")
         if 'rgb_brightness' in config:
             _brightness = config['rgb_brightness']
             if not isinstance(_brightness, int):
@@ -102,7 +102,7 @@ class WS2812Addon(Addon):
             else:
                 self.brightness = _brightness
                 patch['rgb_brightness'] = self.brightness
-                self.log.info(f"Update RGB brightness: {self.brightness}")
+                self.log.debug(f"Update RGB brightness: {self.brightness}")
         if 'rgb_speed' in config:
             _speed = config['rgb_speed']
             if not isinstance(_speed, int):
@@ -110,7 +110,7 @@ class WS2812Addon(Addon):
             else:
                 self.speed = _speed
                 patch['rgb_speed'] = self.speed
-                self.log.info(f"Update RGB speed: {self.speed}")
+                self.log.debug(f"Update RGB speed: {self.speed}")
         if 'rgb_style' in config:
             _style = config['rgb_style']
             if not isinstance(_style, str) or _style not in RGB_STYLES:
@@ -118,7 +118,7 @@ class WS2812Addon(Addon):
             else:
                 self.style = _style
                 patch['rgb_style'] = self.style
-                self.log.info(f"Update RGB style: {self.style}")
+                self.log.debug(f"Update RGB style: {self.style}")
         return patch
 
 

@@ -52,7 +52,9 @@ class Addons:
 
         # Initialize addons
         self.addons = {}
-        for Addon in get_addons(peripherals):
+        addons = get_addons(peripherals)
+        self.log.info(f"Addons: {', '.join([addon.__name__ for addon in addons])}")
+        for Addon in addons:
             name = Addon.__name__.replace('Addon', '').lower()
             addon = Addon(config=self.config, event=self.event, device_info=device_info, peripherals=peripherals, log=log)
             if addon.is_ready():

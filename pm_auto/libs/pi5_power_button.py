@@ -10,12 +10,13 @@ from enum import IntEnum
 
 class ButtonStatus(IntEnum):
     RELEASED = 0
-    CLICK = 1
-    DOUBLE_CLICK = 2
-    LONG_PRESS_2S = 3
-    LONG_PRESS_2S_RELEASED = 4
-    LONG_PRESS_5S = 5
-    LONG_PRESS_5S_RELEASED = 6
+    PRESSED = 1
+    CLICK = 2
+    DOUBLE_CLICK = 3
+    LONG_PRESS_2S = 4
+    LONG_PRESS_2S_RELEASED = 5
+    LONG_PRESS_5S = 6
+    LONG_PRESS_5S_RELEASED = 7
 
 class ShutdownReason(IntEnum):
     NONE = 0
@@ -40,7 +41,7 @@ class Pi5PowerButton():
         if grab:
             self.dev.grab()
 
-        self.status = 'released'
+        self.status = ButtonStatus.RELEASED
         self.last_key_down_time = 0
         self.last_key_up_time = 0
         self.is_pressed = False
@@ -63,34 +64,32 @@ class Pi5PowerButton():
             if event.type == ecodes.EV_KEY and event.code == self.EVENT_CODE:
                 _event_time = event.timestamp()
                 if event.value == 0: # up
-                    if self._debug:
-                        print('-------------------up-----------------')
+                    # print('-------------------up-----------------')
                     self.is_pressed = False
                     
                     self.last_key_up_time = time.time()
 
                     if self.doule_clik_ready:
-                        self.status = 'double_click'
+                        self.status = ButtonStatus.DOUBLE_CLICK
                         self.doule_clik_ready = False
                         continue
                     
                     _interval = _event_time - self.last_key_down_time
                     if _interval > 5:
-                        self.status = 'long_press_5s_released'
+                        self.status = ButtonStatus.LONG_PRESS_5S_RELEASED
                     elif _interval > 2:
-                        self.status = 'long_press_2s_released'
+                        self.status = ButtonStatus.LONG_PRESS_2S_RELEASED
                     else:
-                        self.status = 'single_click'
+                        self.status = ButtonStatus.CLICK
 
                 elif event.value == 1: # down
-                    if self._debug:
-                        print('-------------------down-----------------')
+                    # print('-------------------down-----------------')
                     self.is_pressed = True
 
                     if _event_time - self.last_key_down_time < self.DOUBLE_CLICK_INTERVAL:
                         self.doule_clik_ready = True
 
-                    self.status = 'released'
+                    self.status = ButtonStatus.PRESSED
                     self.last_key_down_time = _event_time
                     
     def read(self):
@@ -122,6 +121,7 @@ class Pi5PowerButton():
         self.start_pwr_btn_watcher()
         while self.running:
             state = self.read()
+            # print(state)
             if self._debug and state != ButtonStatus.RELEASED:
                 print(state)
             if self._button_callback is not None:

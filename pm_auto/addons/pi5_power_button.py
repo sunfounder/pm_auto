@@ -26,11 +26,11 @@ class Pi5PowerButtonAddon(Addon):
             self.event.publish('pi5_power_button_shutdown', reason)
 
     @log_error
-    def start(self):
+    async def _start(self):
         self.button.start()
 
     @log_error
-    def stop(self):
+    async def _stop(self):
         self.button.stop()
     
 
