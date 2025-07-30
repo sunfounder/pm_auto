@@ -257,10 +257,10 @@ class OLEDNotDetected(Exception):
         )
     
 class SSD1306():
-    def __init__(self):
+    def __init__(self, rotation=0):
         self._is_ready = False
         self.oled = None
-        self.rotation = 0
+        self.rotation = rotation
         if not I2C.enabled():
             raise I2cNotEnabled()
         addresses = self.check_oled()
@@ -271,6 +271,8 @@ class SSD1306():
         self._is_ready = True
 
     def set_rotation(self, rotation):
+        if rotation not in [0, 180]:
+            raise ValueError("Rotation must be 0 or 180")
         self.rotation = rotation
 
     def is_ready(self):
@@ -368,7 +370,6 @@ class SSD1306():
 
         # 绘制到画布上
         self.image.paste(final_img, (x, y), None)
-
 
     def display(self):
         image = self.image.rotate(self.rotation)

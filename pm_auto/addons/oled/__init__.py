@@ -39,7 +39,7 @@ class OLEDAddon(Addon):
         super().__init__(*args, **kwargs)
 
         try:
-            self.oled = SSD1306()
+            self.oled = SSD1306(rotation=self.rotation)
         except Exception as e:
             self.log.error(f"Failed to initialize OLED service: {e}")
             return
@@ -124,9 +124,9 @@ class OLEDAddon(Addon):
                     self.log.warning(f"Invalid oled page {page}, must be in {self.available_pages}")
                 else:
                     new_pages.append(page)
+            new_pages = list(set(new_pages))
             if not init:
                 self.update_pages(pages=new_pages)
-            new_pages = list(set(new_pages))
             self.oled_pages = new_pages
             patch['oled_pages'] = new_pages
             self.log.debug(f"Update oled_pages to {self.oled_pages}")
