@@ -15,8 +15,8 @@ class Page_Performance(OLED_Page):
 
     def main(self, oled, data, config):
         temperature_unit = config['temperature_unit']
-        cpu_temp_c = data.get("cpu_temp_c", 0)
-        cpu_temp_f = data.get("cpu_temp_f", 0)
+        cpu_temp_c = data.get("cpu_temperature", 0)
+        cpu_temp_f = cpu_temp_c * 9 / 5 + 32
         
         cpu_usage = data.get("cpu_percent", 0)
         if cpu_usage >= 100:

@@ -29,7 +29,7 @@ class Page_Mix(OLED_Page):
 
         cpu_temp_c = data.get("cpu_temperature", 0)
         cpu_temp_f = cpu_temp_c * 9 / 5 + 32
-        cpu_usage = data.get("cpu_usage", 0)
+        cpu_usage = data.get("cpu_percent", 0)
         if cpu_usage >= 100:
             cpu_usage = 100
 
