@@ -130,6 +130,7 @@ class OLEDAddon(Addon):
             self.oled_pages = new_pages
             patch['oled_pages'] = new_pages
             self.log.debug(f"Update oled_pages to {self.oled_pages}")
+        self.config.update(patch)
         return patch
 
     @log_error
