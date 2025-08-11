@@ -118,6 +118,7 @@ class FanAddon(Addon):
             _mode = config['gpio_fan_mode']
             if _mode in range(len(GPIO_FAN_MODES)):
                 self.log.debug(f"Update gpio_fan_mode to {_mode}")
+                self.gpio_fan_mode = _mode
                 patch['gpio_fan_mode'] = _mode
             else:
                 self.log.error(f"Invalid gpio_fan_mode: {_mode}")
@@ -175,7 +176,7 @@ class FanAddon(Addon):
                 self.spc_fan.set_power(spc_fan_power)
                 data["spc_fan_power"] = spc_fan_power
             if self.gpio_fan.is_ready():
-                gpio_fan_state = pwm_fan_level >= self.config['gpio_fan_mode']
+                gpio_fan_state = pwm_fan_level >= self.gpio_fan_mode
                 data["gpio_fan_state"] = gpio_fan_state
                 self.gpio_fan.set(gpio_fan_state)
         else:
@@ -196,7 +197,7 @@ class FanAddon(Addon):
             power = FAN_LEVELS[self.level]['percent']
 
             if self.gpio_fan.is_ready():
-                gpio_fan_state = self.level >= self.config['gpio_fan_mode']
+                gpio_fan_state = self.level >= self.gpio_fan_mode
                 data['gpio_fan_state'] = gpio_fan_state
                 self.gpio_fan.set(gpio_fan_state)
             if self.spc_fan.is_ready():

@@ -93,8 +93,8 @@ class WS2812Addon(Addon):
                 self.log.error(f"Invalid rgb_color: {_color}")
             else:
                 self.color = self.hex_to_rgb(_color)
-                patch['rgb_color'] = self.color
-                self.log.debug(f"Update RGB color: {self.color}")
+                patch['rgb_color'] = _color
+                self.log.debug(f"Update RGB color: {_color}")
         if 'rgb_brightness' in config:
             _brightness = config['rgb_brightness']
             if not isinstance(_brightness, int):
