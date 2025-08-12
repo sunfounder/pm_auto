@@ -30,8 +30,6 @@ class WS2812Addon(Addon):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.led_count = 8
-
         self.strip = None
         self.counter = 0
         self.counter_max = 100
