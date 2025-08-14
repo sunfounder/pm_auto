@@ -2,7 +2,7 @@ from itertools import islice
 import time
 
 from pm_auto.libs.utils import get_icon, get_font
-from pm_auto.libs.oled_page import OLED_Page
+from pm_auto.libs.oled_page import OLEDPage
 
 ethernet_icon = get_icon('icon_lan_20.png')
 wifi_icon = get_icon('icon_wifi_20.png')
@@ -11,7 +11,7 @@ error_icon = get_icon('icon_error_20.png')
 
 font = get_font('UbuntuSans-Regular.ttf')
 
-class Page_IPs(OLED_Page):
+class PageIPs(OLEDPage):
     def __init__(self):
         super().__init__()
         self.ip_index = 0

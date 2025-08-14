@@ -1,5 +1,5 @@
 from pm_auto.libs.utils import get_icon, format_bytes, get_font
-from pm_auto.libs.oled_page import OLED_Page
+from pm_auto.libs.oled_page import OLEDPage
 
 font = get_font('UbuntuSans-Regular.ttf')
 
@@ -8,7 +8,7 @@ ram_icon = get_icon('icon_ram_24.png')
 temp_icon = get_icon('icon_temperature_24.png')
 fan_icon = get_icon('icon_fan_24.png')
 
-class Page_Performance(OLED_Page):
+class PagePerformance(OLEDPage):
     def __init__(self):
         super().__init__()
         self.cycle_time_start = 0

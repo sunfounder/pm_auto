@@ -1,32 +1,32 @@
 
-from .power_off import Page_Power_Off
+from .power_off import PagePowerOff
 
-power_off_page = Page_Power_Off()
+power_off_page = PagePowerOff()
 
 def get_pages(page_names):
     pages = []
     for name in page_names:
         if 'battery' == name:
-            from .battery import Page_Battery
-            pages.append(Page_Battery())
+            from .battery import PageBattery
+            pages.append(PageBattery())
         elif 'disk' == name:
-            from .disks import Page_Disk
-            pages.append(Page_Disk())
+            from .disks import PageDisks
+            pages.append(PageDisks())
         elif 'input' == name:
-            from .input import Page_Input
-            pages.append(Page_Input())
+            from .input import PageInput
+            pages.append(PageInput())
         elif 'ips' == name:
-            from .ips import Page_IPs
-            pages.append(Page_IPs())
+            from .ips import PageIPs
+            pages.append(PageIPs())
         elif 'mix' == name:
-            from .mix import Page_Mix
-            pages.append(Page_Mix())
+            from .mix import PageMix
+            pages.append(PageMix())
         elif 'rpi_power' == name:
-            from .rpi_power import Page_RPi_Power
-            pages.append(Page_RPi_Power())
+            from .rpi_power import PageRPiPower
+            pages.append(PageRPiPower())
         elif 'performance' == name:
-            from .performance import Page_Performance
-            pages.append(Page_Performance())
+            from .performance import PagePerformance
+            pages.append(PagePerformance())
         else:
             raise ValueError(f"Unknown page name: {name}")
 

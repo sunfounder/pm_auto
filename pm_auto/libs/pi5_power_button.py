@@ -126,8 +126,8 @@ class Pi5PowerButton():
                 print(state)
             if self._button_callback is not None:
                 self._button_callback(state)
-            if self._shutdown_callback is not None and state == ButtonStatus.LONG_PRESS_2S:
-                self._shutdown_callback(ShutdownReason.BUTTON)
+            # if self._shutdown_callback is not None and state == ButtonStatus.LONG_PRESS_2S:
+            #     self._shutdown_callback(ShutdownReason.BUTTON)
             time.sleep(self.READ_INTERVAL)
 
     def start(self):

@@ -8,22 +8,29 @@ class Pi5PowerButtonAddon(Addon):
         super().__init__(*args, **kwargs)
         self.button = Pi5PowerButton()
         self.button.set_button_callback(self.button_callback)
-        self.button.set_shutdown_callback(self.shutdown_callback)
+        # self.button.set_shutdown_callback(self.shutdown_callback)
         self._is_ready = True
 
     @log_error
     def button_callback(self, state):
         if state == ButtonStatus.CLICK:
+            self.log.debug("Pi5 power button click")
             self.event.publish('pi5_power_button_click', state)
         elif state == ButtonStatus.DOUBLE_CLICK:
+            self.log.debug("Pi5 power button double click")
             self.event.publish('pi5_power_button_double_click', state)
         elif state == ButtonStatus.LONG_PRESS_2S:
+            self.log.debug("Pi5 power button long press 2s")
             self.event.publish('pi5_power_button_long_press_2s', state)
+        elif state == ButtonStatus.LONG_PRESS_2S_RELEASED:
+            self.log.debug("Pi5 power button long press 2s released")
+            self.event.publish('pi5_power_button_long_press_2s_released', state)
 
     @log_error
-    def shutdown_callback(self, reason):
-        if reason == ShutdownReason.BUTTON:
-            self.event.publish('pi5_power_button_shutdown', reason)
+    # def shutdown_callback(self, reason):
+    #     if reason == ShutdownReason.BUTTON:
+    #         self.log.debug("Pi5 power button shutdown")
+    #         self.event.publish('pi5_power_button_shutdown', reason)
 
     @log_error
     async def _start(self):

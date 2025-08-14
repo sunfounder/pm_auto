@@ -24,6 +24,7 @@ class PiPower5Addon(Addon):
         self.service.set_on_button_click(self.handle_button_click)
         self.service.set_on_button_double_click(self.handle_button_double_click)
         self.service.set_on_button_long_press(self.handle_button_long_press)
+        self.service.set_on_button_long_press_released(self.handle_button_long_press_released)
         self.service.set_on_low_battery_shutdown(self.handle_low_battery_shutdown)
         self.service.set_on_button_shutdown(self.handle_button_shutdown)
         self.service.set_on_low_voltage_shutdown(self.handle_low_voltage_shutdown)
@@ -54,6 +55,12 @@ class PiPower5Addon(Addon):
     def handle_button_long_press(self, button_state):
         self.log.info(f'PiPower button long press: {button_state}')
         self.event.publish('pipower5_button_long_press', button_state)
+
+    @log_error
+    def handle_button_long_press_released(self, button_state):
+        self.log.info(f'PiPower button long press released: {button_state}')
+        self.event.publish('pipower5_button_long_press_released', button_state)
+
 
     @log_error
     def handle_low_battery_shutdown(self, button_state):

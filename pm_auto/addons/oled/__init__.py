@@ -1,4 +1,5 @@
 from pm_auto.libs.ssd1306 import SSD1306
+
 from pm_auto.libs.utils import log_error, constrain
 from pm_auto.libs.addon import Addon
 
@@ -57,6 +58,7 @@ class OLEDAddon(Addon):
         self.event.subscribe("oled_wake_page_next", self.wake_page_next)
         self.event.subscribe("oled_page_prev", self.page_prev)
         self.event.subscribe("shutdown", self.show_shutdown_screen)
+        self.event.subscribe("oled_show_shutdown_screen", self.show_shutdown_screen)
         self.event.subscribe("data_changed", self.handle_data_changed)
 
     @log_error
@@ -139,9 +141,8 @@ class OLEDAddon(Addon):
 
     @log_error
     def show_shutdown_screen(self, reason):
-        self.log.info(f"Shutdown reason: {reason}")
+        self.log.info(f"Show shutdown screen, reason: {reason}")
         self.is_power_off = True
-        self.wake()
 
     @log_error
     def wake(self):
@@ -193,7 +194,8 @@ class OLEDAddon(Addon):
                 continue
             
             if self.is_power_off == True:
-                power_off_page(self.oled)
+                self.log.debug("OLED show power off page")
+                power_off_page.main(self.oled)
                 await asyncio.sleep(1)
                 continue
 
@@ -225,7 +227,8 @@ class OLEDAddon(Addon):
                 if self.last_page_index != self.page_index or time.time() - last_refresh_time > self.REFRESH_INTERVAL:
                     self.last_page_index = self.page_index
                     last_refresh_time = time.time()
-                    self.pages[self.page_index](self.oled, self.data, self.config)
+                    page = self.pages[self.page_index]
+                    page.main(self.oled, self.data, self.config)
 
                 if time.time() - self.wake_start_time > self.sleep_timeout:
                     self.log.debug("OLED sleep timeout, sleeping")

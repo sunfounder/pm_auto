@@ -2,7 +2,7 @@ from itertools import islice
 import time
 
 from pm_auto.libs.utils import get_icon, get_font
-from pm_auto.libs.oled_page import OLED_Page
+from pm_auto.libs.oled_page import OLEDPage
 
 font = get_font('UbuntuSans-Regular.ttf')
 
@@ -14,7 +14,7 @@ temp_icon = get_icon('icon_temperature_24.png')
 ram_icon = get_icon('icon_ram_24.png')
 error_icon = get_icon('icon_error_20.png')
 
-class Page_Mix(OLED_Page):
+class PageMix(OLEDPage):
     def __init__(self):
         super().__init__()
         self.ip_index = 0

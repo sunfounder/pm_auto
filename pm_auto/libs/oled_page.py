@@ -1,10 +1,10 @@
-class OLED_Page():
+class OLEDPage():
 
-    def main(self, oled, data, config):
+    def main(self, oled, *args, **kwargs):
         pass
 
-    def __call__(self, oled, data, config):
-        self.main(oled, data, config)
+    def __call__(self, oled, *args, **kwargs):
+        self.main(oled, *args, **kwargs)
 
     def __str__(self) -> str:
         return self.__class__.__name__

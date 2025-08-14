@@ -1,12 +1,12 @@
 from pm_auto.libs.utils import get_icon, get_font
-from pm_auto.libs.oled_page import OLED_Page
+from pm_auto.libs.oled_page import OLEDPage
 
 font = get_font('UbuntuSans-Regular.ttf')
 
 output_icon = get_icon('raspberry_icon_48.png')
 sunfounder_icon = get_icon('sunfounder.ico')
 
-class Page_RPi_Power(OLED_Page):
+class PageRPiPower(OLEDPage):
     def __init__(self):
         super().__init__()
 

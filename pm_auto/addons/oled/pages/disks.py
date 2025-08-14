@@ -1,7 +1,7 @@
 from itertools import islice
 import time
 
-from pm_auto.libs.oled_page import OLED_Page
+from pm_auto.libs.oled_page import OLEDPage
 from pm_auto.libs.utils import get_icon, format_bytes, get_font
 
 sdcard_icon = get_icon('icon_sd_card_20.png')
@@ -13,7 +13,7 @@ error_icon = get_icon('icon_error_20.png')
 
 font = get_font('UbuntuSans-Regular.ttf')
 
-class Page_Disk(OLED_Page):
+class PageDisks(OLEDPage):
     def __init__(self):
         super().__init__()
         self.disk_index = 0

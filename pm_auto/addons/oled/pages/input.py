@@ -1,13 +1,13 @@
 
 from pm_auto.libs.utils import get_icon, get_font
-from pm_auto.libs.oled_page import OLED_Page
+from pm_auto.libs.oled_page import OLEDPage
 
 cable_plug_icon = get_icon('icon_plug_48.png')
 cable_unplug_icon = get_icon('icon_unplug_48.png')
 
 font = get_font('UbuntuSans-Regular.ttf')
 
-class Page_Input(OLED_Page):
+class PageInput(OLEDPage):
     def __init__(self):
         super().__init__()
 

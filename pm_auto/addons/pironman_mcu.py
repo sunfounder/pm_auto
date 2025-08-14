@@ -35,9 +35,12 @@ class PironmanMcuAddon(Addon):
             elif mcu_button == ButtonStatus.LONG_PRESS_2S:
                 self.log.debug("Pironman MCU button long press 2s")
                 self.event.publish("pironman_mcu_button_long_press")
-            if shutdown_request == ShutdownReason.BUTTON:
-                self.log.info("Pironman MCU button shutdown request")
-                self.event.publish("pironman_mcu_shutdown_request_button", "button")
+            elif mcu_button == ButtonStatus.LONG_PRESS_2S_RELEASED:
+                self.log.debug("Pironman MCU button long press 2s released")
+                self.event.publish("pironman_mcu_button_long_press_released")
+            # if shutdown_request == ShutdownReason.BUTTON:
+            #     self.log.info("Pironman MCU button shutdown request")
+            #     self.event.publish("pironman_mcu_shutdown_request_button", "button")
             await asyncio.sleep(INTERVAL)
 
     @log_error
