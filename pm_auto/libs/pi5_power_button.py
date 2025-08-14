@@ -4,6 +4,8 @@ from os import path
 from evdev import InputDevice, ecodes
 import threading
 from enum import IntEnum
+import re
+import json
 
 # https://raspberrypi.stackexchange.com/questions/149209/execute-custom-script-raspberry-pi-5-using-the-build-in-power-button
 # https://forums.raspberrypi.com/viewtopic.php?t=364002
@@ -22,9 +24,111 @@ class ShutdownReason(IntEnum):
     NONE = 0
     BUTTON = 1
 
+def parse_input_devices_to_json():
+    """
+    Parse /proc/bus/input/devices file into structured JSON, extracting clean field values
+    
+    Returns:
+        str: Formatted JSON string
+        None: Returns None if parsing fails
+    """
+    with open("/proc/bus/input/devices", "r") as f:
+        content = f.read()
+    
+    # Split by device (each device starts with "I: Bus=")
+    device_blocks = re.split(r'\n(?=I: Bus=)', content.strip())
+    devices = {}
+    
+    for block in device_blocks:
+        device_info = {}
+        lines = [line.strip() for line in block.split('\n') if line.strip()]
+        
+        for line in lines:
+            # Extract type identifier (e.g., I, N, P, etc.)
+            match = re.match(r'^([A-Z]): (.*)$', line)
+            if not match:
+                continue
+                
+            key = match.group(1)
+            value_str = match.group(2)
+            
+            # Parse different field types
+            if key == 'I':  # Bus information
+                # Extract Bus, Vendor, Product, Version
+                bus_info = {}
+                for item in value_str.split():
+                    if '=' in item:
+                        k, v = item.split('=', 1)
+                        bus_info[k.lower()] = v
+                device_info['bus'] = bus_info
+                
+            elif key == 'N':  # Device name
+                # Extract name from quotes (e.g., Name="Power Button" → Power Button)
+                name_match = re.search(r'Name="([^"]+)"', value_str)
+                if name_match:
+                    device_info['name'] = name_match.group(1)
+                    
+            elif key == 'P':  # Physical location
+                phys_match = re.search(r'Phys=([^ ]+)', value_str)
+                if phys_match:
+                    device_info['phys'] = phys_match.group(1)
+                    
+            elif key == 'S':  # sysfs path
+                sysfs_match = re.search(r'Sysfs=([^ ]+)', value_str)
+                if sysfs_match:
+                    device_info['sysfs'] = sysfs_match.group(1)
+                    
+            elif key == 'U':  # Unique identifier
+                uniq_match = re.search(r'Uniq=([^ ]*)', value_str)
+                if uniq_match:
+                    device_info['uniq'] = uniq_match.group(1)
+                    
+            elif key == 'H':  # Handlers
+                handlers_match = re.search(r'Handlers=(.*)', value_str)
+                if handlers_match:
+                    device_info['handlers'] = handlers_match.group(1).split()
+                for handler in device_info['handlers']:
+                    if handler.startswith('event'):
+                        device_info['path'] = f"/dev/input/{handler}"
+                        break
+
+                    
+            elif key == 'B':  # Properties field
+                prop_parts = value_str.split('=', 1)
+                if len(prop_parts) == 2:
+                    prop_name = prop_parts[0].strip()
+                    prop_value = prop_parts[1].strip()
+                    if 'properties' not in device_info:
+                        device_info['properties'] = {}
+                    device_info['properties'][prop_name] = prop_value
+        
+        devices[device_info['name']] = device_info
+    
+    return json.dumps(devices, indent=2, ensure_ascii=False)
+
+def find_device_path(name):
+    """
+    Find the path corresponding to the device name
+    
+    Args:
+        name (str): Device name
+        
+    Returns:
+        str: Device path, e.g., "/dev/input/event0"
+        None: If device is not found
+    """
+    devices = parse_input_devices_to_json()
+    if not devices:
+        return None
+    
+    devices = json.loads(devices)
+    for dev_name, dev_info in devices.items():
+        if dev_name == name:
+            return dev_info.get('path')
+    return None
+
 class Pi5PowerButton():
 
-    DEV_PATH = '/dev/input/event0'
     EVENT_CODE = ecodes.KEY_POWER # usually 116
 
     DOUBLE_CLICK_INTERVAL = 0.25 # 250ms
@@ -33,10 +137,11 @@ class Pi5PowerButton():
     READ_INTERVAL = 0.1 # 100ms
 
     def __init__(self, grab=True, debug=False):
-        if not path.exists(self.DEV_PATH):
-            raise Exception(f'Power button device not found at {self.DEV_PATH}')
-   
-        self.dev = InputDevice(self.DEV_PATH)
+        device_path = find_device_path('pwr_button')
+        if not device_path:
+            raise Exception(f'Power button device not found')
+        
+        self.dev = InputDevice(device_path)
         # grab the device to prevent other programs from reading it
         if grab:
             self.dev.grab()
