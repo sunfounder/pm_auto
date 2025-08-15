@@ -54,12 +54,14 @@ class PiPower5Addon(Addon):
     @log_error
     def handle_button_long_press(self, button_state):
         self.log.info(f'PiPower button long press: {button_state}')
-        self.event.publish('pipower5_button_long_press', button_state)
+        self.event.publish('pipower5_button_long_press', 'button_long_press')
+
 
     @log_error
     def handle_button_long_press_released(self, button_state):
         self.log.info(f'PiPower button long press released: {button_state}')
-        self.event.publish('pipower5_button_long_press_released', button_state)
+        self.event.publish('pipower5_button_long_press_released', 'button_long_press_released')
+
 
 
     @log_error

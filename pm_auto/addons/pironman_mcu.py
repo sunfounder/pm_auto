@@ -34,10 +34,10 @@ class PironmanMcuAddon(Addon):
                 self.event.publish("pironman_mcu_button_double_click")
             elif mcu_button == ButtonStatus.LONG_PRESS_2S:
                 self.log.debug("Pironman MCU button long press 2s")
-                self.event.publish("pironman_mcu_button_long_press")
+                self.event.publish("pironman_mcu_button_long_press", 'button_long_press')
             elif mcu_button == ButtonStatus.LONG_PRESS_2S_RELEASED:
                 self.log.debug("Pironman MCU button long press 2s released")
-                self.event.publish("pironman_mcu_button_long_press_released")
+                self.event.publish("pironman_mcu_button_long_press_released", 'button_long_press_released')
             # if shutdown_request == ShutdownReason.BUTTON:
             #     self.log.info("Pironman MCU button shutdown request")
             #     self.event.publish("pironman_mcu_shutdown_request_button", "button")
