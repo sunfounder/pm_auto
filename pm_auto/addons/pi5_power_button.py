@@ -20,11 +20,11 @@ class Pi5PowerButtonAddon(Addon):
             self.log.debug("Pi5 power button double click")
             self.event.publish('pi5_power_button_double_click', state)
         elif state == ButtonStatus.LONG_PRESS_2S:
-            self.log.debug("Pi5 power button long press 2s")
-            self.event.publish('pi5_power_button_long_press_2s', state)
+            self.log.debug("Pi5 power button long press")
+            self.event.publish('pi5_power_button_long_press', state)
         elif state == ButtonStatus.LONG_PRESS_2S_RELEASED:
-            self.log.debug("Pi5 power button long press 2s released")
-            self.event.publish('pi5_power_button_long_press_2s_released', state)
+            self.log.debug("Pi5 power button long press released")
+            self.event.publish('pi5_power_button_long_press_released', state)
 
     @log_error
     # def shutdown_callback(self, reason):

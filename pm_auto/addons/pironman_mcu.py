@@ -25,7 +25,7 @@ class PironmanMcuAddon(Addon):
     async def _main(self):
         while self.running:
             mcu_button = self.mcu.get_button()
-            shutdown_request = self.mcu.get_shutdown_request()
+            # shutdown_request = self.mcu.get_shutdown_request()
             if mcu_button == ButtonStatus.CLICK:
                 self.log.debug("Pironman MCU button click")
                 self.event.publish("pironman_mcu_button_click")
