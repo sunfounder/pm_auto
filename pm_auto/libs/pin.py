@@ -8,18 +8,18 @@ class PinMode(Enum):
 
 class Pin:
     def __init__(self, pin: int, mode: PinMode):
-        self.pin = pin
-        self.mode = mode
+        self._pin = pin
+        self._mode = mode
         self._value = None
 
         from RPi import GPIO
         self.gpio = GPIO
 
         self.gpio.setmode(self.gpio.BCM)
-        if self.mode == PinMode.OUT:
-            self.gpio.setup(self.pin, self.gpio.OUT)
-        elif self.mode == PinMode.IN:
-            self.gpio.setup(self.pin, self.gpio.IN)
+        if self._mode == PinMode.OUT:
+            self.gpio.setup(self._pin, self.gpio.OUT)
+        elif self._mode == PinMode.IN:
+            self.gpio.setup(self._pin, self.gpio.IN)
         else:
             pass
 
@@ -30,23 +30,23 @@ class Pin:
         if self.mode == PinMode.OUT:
             return self._value
         elif self.mode == PinMode.IN:
-            return self.gpio.input(self.pin)
+            return self.gpio.input(self._pin)
         else:
             # auto setmode to input
-            self.gpio.setup(self.pin, self.gpio.IN)
+            self.gpio.setup(self._pin, self.gpio.IN)
             self.mode = PinMode.IN
-            return self.gpio.input(self.pin)
+            return self.gpio.input(self._pin)
 
     @value.setter
     def value(self, value):
         if self.mode == PinMode.OUT:
             self._value = value
-            self.gpio.output(self.pin, value)
+            self.gpio.output(self._pin, value)
         else:
             # auto setmode to output
-            self.gpio.setup(self.pin, self.gpio.OUT)
+            self.gpio.setup(self._pin, self.gpio.OUT)
             self.mode = PinMode.OUT
-            self.gpio.output(self.pin, value)
+            self.gpio.output(self._pin, value)
 
     @property
     def mode(self):
@@ -55,9 +55,9 @@ class Pin:
     @mode.setter
     def mode(self, value):
         if value == PinMode.OUT:
-            self.gpio.setup(self.pin, self.gpio.OUT)
+            self.gpio.setup(self._pin, self.gpio.OUT)
         elif value == PinMode.IN:
-            self.gpio.setup(self.pin, self.gpio.IN)
+            self.gpio.setup(self._pin, self.gpio.IN)
         else:
             pass
         self._mode = value
@@ -96,10 +96,10 @@ class Pin:
         self.value = not self.value
 
     def close(self):
-        self.gpio.cleanup(self.pin)
+        if self._mode and self._mode == PinMode.OUT:
+            self.off()
+        if self.gpio and self._pin:
+            self.gpio.cleanup(self._pin)
 
     def __del__(self):
-        self.gpio.cleanup(self.pin)
-
-
-
+        self.close()

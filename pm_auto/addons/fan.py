@@ -315,7 +315,6 @@ class GPIOFan(Fan):
             self._is_ready = False
             return False
 
-
     @log_error
     @check_ready
     def set(self, value: bool):
