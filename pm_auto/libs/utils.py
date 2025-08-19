@@ -112,6 +112,6 @@ def softlink_gpiochip0_to_gpiochip4():
     if not os.path.exists('/dev/gpiochip0'):
         raise Exception('gpiochip0 device not found')
     if not os.path.exists('/dev/gpiochip4'):
-        status, result = run_command('sudo ln -s /dev/gpiochip0 /dev/gpiochip4')
+        status, result = run_command('ln -s /dev/gpiochip0 /dev/gpiochip4')
         if status != 0:
             raise Exception(f'Failed to softlink gpiochip0 to gpiochip4: {result}')

@@ -45,7 +45,7 @@ class SystemAddon(Addon):
             except Exception as e:
                 self.log.error(f"Failed to shutdown: {e}")
                 from os import system
-                system("sudo shutdown -h now")
+                system("shutdown -h now")
 
     @log_error
     def task_once(self):

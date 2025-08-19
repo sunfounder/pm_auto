@@ -463,7 +463,7 @@ class PWMFan(Fan):
             elif level < 0:
                 level = 0
 
-            cmd = f"echo '{level}' | sudo tee -a /sys/class/thermal/cooling_device0/cur_state"
+            cmd = f"echo '{level}' | tee -a /sys/class/thermal/cooling_device0/cur_state"
             result = subprocess.check_output(cmd, shell=True)
 
             return result
