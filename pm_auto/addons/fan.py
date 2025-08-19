@@ -268,18 +268,19 @@ class GPIOFan(Fan):
         super().__init__(*args, **kwargs)
 
         try:
-            import gpiozero
-            
-            # Fix gpiozero reads gpiochip4 while new kernel changed to gpiochip0
-            softlink_gpiochip0_to_gpiochip4()
+            from pm_auto.libs.pin import Pin, PinMode
 
+            # Init fan
             self.pin = pin
-            self.fan = gpiozero.DigitalOutputDevice(pin)
+            self.fan = Pin(pin, PinMode.OUT)
+            self.fan.off()
+
+            # Init LED if exist
             self.led = None
             self.led_follow = False
             if led_pin is not None:
-                self.led = gpiozero.DigitalOutputDevice(led_pin)
-                self.led.value = 0
+                self.led = Pin(led_pin, PinMode.OUT)
+                self.led.off()
             self._is_ready = True
         except Exception as e:
             self.log.error(f"GPIO Fan init error: {e}")
@@ -289,8 +290,10 @@ class GPIOFan(Fan):
         self.fan.close()
         self.pin = pin
         try:
-            import gpiozero
-            self.fan = gpiozero.DigitalOutputDevice(pin)
+            from pm_auto.libs.pin import Pin, PinMode
+            self.fan = Pin(pin, PinMode.OUT)
+            self.fan.off()
+
             self._is_ready = True
             return True
         except Exception as e:
@@ -302,8 +305,8 @@ class GPIOFan(Fan):
         self.led.close()
         self.led_pin = led_pin
         try:
-            import gpiozero
-            self.led = gpiozero.DigitalOutputDevice(led_pin)
+            from pm_auto.libs.pin import Pin, PinMode
+            self.led = Pin(led_pin, PinMode.OUT)
             self.led.off()
             self._is_ready = True
             return True
@@ -316,9 +319,9 @@ class GPIOFan(Fan):
     @log_error
     @check_ready
     def set(self, value: bool):
-        self.fan.value = value
+        self.fan.set_value(value)
         if self.led_follow:
-            self.led.value = value
+            self.led.set_value(value)
 
     @log_error
     @check_ready
@@ -329,9 +332,9 @@ class GPIOFan(Fan):
         else:
             self.led_follow = False
             if value == 'on':
-                self.led.value = 1
+                self.led.on()
             elif value == 'off':
-                self.led.value = 0
+                self.led.off()
             else:
                 self.log.warning(f"Invalid led value: {value}")
                 return False
