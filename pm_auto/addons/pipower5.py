@@ -21,18 +21,19 @@ class PiPower5Addon(Addon):
             self.log.error('PiPower5 Init error')
             return
         
+        self.service.set_on_config_changed(self.update_config)
         self.service.set_on_button_click(self.handle_button_click)
         self.service.set_on_button_double_click(self.handle_button_double_click)
         self.service.set_on_button_long_press(self.handle_button_long_press)
         self.service.set_on_button_long_press_released(self.handle_button_long_press_released)
-        self.service.set_on_low_battery_shutdown(self.handle_low_battery_shutdown)
+        self.service.set_on_battery_critical_shutdown(self.handle_low_battery_shutdown)
         self.service.set_on_button_shutdown(self.handle_button_shutdown)
-        self.service.set_on_low_voltage_shutdown(self.handle_low_voltage_shutdown)
-        self.service.set_on_low_power(self.handle_low_power)
+        self.service.set_on_battery_voltage_critical_shutdown(self.handle_low_voltage_shutdown)
+        self.service.set_on_low_battery(self.handle_low_power)
         self.service.set_on_power_insufficient(self.handle_power_insufficient)
         self.service.set_on_battery_activated(self.handle_battery_activated)
-        self.service.set_on_input_plugged_in(self.handle_input_plugged_in)
-        self.service.set_on_input_unplugged(self.handle_input_unplugged)
+        self.service.set_on_power_restore(self.handle_input_plugged_in)
+        self.service.set_on_power_disconnected(self.handle_input_unplugged)
         self.service.set_on_data_changed(self.handle_data_changed)
 
         self._is_ready = True
@@ -55,7 +56,6 @@ class PiPower5Addon(Addon):
     def handle_button_long_press(self, button_state):
         self.log.info(f'PiPower button long press: {button_state}')
         self.event.publish('pipower5_button_long_press', 'button_long_press')
-
 
     @log_error
     def handle_button_long_press_released(self, button_state):
