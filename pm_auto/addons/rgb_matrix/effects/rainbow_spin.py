@@ -1,6 +1,7 @@
 import numpy as np
 from .spin import rotate_and_crop
 import time
+from pm_auto.libs.color import Color
 
 MAX_FRAME = 40
 frame_index = 0
@@ -129,7 +130,8 @@ def rainbow_spin(self, rgb_matrix):
             r = rotated_cropped_8_4[x][y][0]
             g = rotated_cropped_8_4[x][y][1]
             b = rotated_cropped_8_4[x][y][2]
-            rgb_matrix.draw_point((y, x), (r, g, b))
+            color = Color.apply_brightness((r, g, b), self.brightness)
+            rgb_matrix.draw_point((y, x), color)
     rgb_matrix.display()
     time.sleep(interval)
     

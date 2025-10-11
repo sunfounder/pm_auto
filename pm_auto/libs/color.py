@@ -71,7 +71,14 @@ class Color():
         g = round(g1 * (1 - ratio) + g2 * ratio)
         b = round(b1 * (1 - ratio) + b2 * ratio)
         return '#{:02X}{:02X}{:02X}'.format(r, g, b)
-    
+
+    @staticmethod
+    def apply_brightness(color, brightness):
+        r, g, b = color
+        r = int(r * brightness / 100)
+        g = int(g * brightness / 100)
+        b = int(b * brightness / 100)
+        return (r, g, b)
 
     # str or hex, eg: 'ffffff', '#ffffff', '#FFFFFF'
     @staticmethod

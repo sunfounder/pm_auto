@@ -11,11 +11,14 @@ list = [[0, 0, 0, 7],
         [6, 0, 6, 7], 
         [7, 0, 7, 7]]
 
+reverse_list = list.copy()
+reverse_list.reverse()
+
 def rainbow(self, rgb_matrix, reverse=False):
     global firsthue, list
 
     if reverse:
-        list.reverse()
+        list = reverse_list
 
     j = 0
     for i in list:
@@ -24,6 +27,7 @@ def rainbow(self, rgb_matrix, reverse=False):
         if hue > 1530:
             hue = hue - 1530
         temp = Color.hsv_to_rgb(hue)
+        temp = Color.apply_brightness(temp, self.brightness)
         rgb_matrix.draw_line(i, (temp[0], temp[1], temp[2]))
 
     rgb_matrix.display()

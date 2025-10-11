@@ -1,6 +1,7 @@
 import colorsys
 import time
 from .spin import draw_2_half_rectangle_matrix, rotate_and_crop
+from pm_auto.libs.color import Color
 
 MAX_FRAME = 36
 DEFAULT_COLOR = (255, 0, 0)
@@ -22,7 +23,7 @@ def shift_spin(self, rgb_matrix):
     r = int(r * 255)
     g = int(g * 255)
     b = int(b * 255)
-    color = (r, g, b)
+    color = Color.apply_brightness((r, g, b), self.brightness)
     _matrix = draw_2_half_rectangle_matrix(color=color)
     frame_index += 1
     if frame_index >= MAX_FRAME:

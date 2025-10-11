@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from PIL import Image
+from pm_auto.libs.color import Color
 
 MAX_FRAME = 36
 DEFAULT_COLOR = (255, 0, 0)
@@ -56,18 +57,19 @@ def rotate_and_crop(image_array, angle, output_size=(8, 4)):
     
     return np.array(cropped_image)
 
-_matrix = []
+_matrix = None
 
 def spin(self, rgb_matrix, single=True):
     global frame_index, _matrix
 
-    if _matrix == []:
-        color = tuple(self.color) or DEFAULT_COLOR
-        if single:
-            _matrix = draw_2_half_rectangle_matrix(color=color)
-        else:
-            color2 = tuple(self.color2) or DEFAULT_COLOR2
-            _matrix = draw_2_half_rectangle_matrix(color=color, color2=color2)
+    color = tuple(self.color) or DEFAULT_COLOR
+    color = Color.apply_brightness(color, self.brightness)
+    if single:
+        _matrix = draw_2_half_rectangle_matrix(color=color)
+    else:
+        color2 = tuple(self.color2) or DEFAULT_COLOR2
+        color2 = Color.apply_brightness(color2, self.brightness)
+        _matrix = draw_2_half_rectangle_matrix(color=color, color2=color2)
 
     speed = self.speed
     interval = 1 / speed
