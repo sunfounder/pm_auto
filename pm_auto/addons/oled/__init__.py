@@ -191,6 +191,7 @@ class OLEDAddon(Addon):
                 if self.wake_flag:
                     self.log.debug("OLED disabled, going to sleep")
                     self.sleep()
+                await asyncio.sleep(1)
                 continue
             
             if self.is_power_off == True:
@@ -202,6 +203,7 @@ class OLEDAddon(Addon):
             if len(self.pages) < 1:
                 self.oled.draw_text(f'config error', 64, 20, align='center', size=16)
                 self.oled.display()
+                await asyncio.sleep(1)
                 continue
 
             if self.is_wake_page_next:
@@ -233,6 +235,7 @@ class OLEDAddon(Addon):
                 if time.time() - self.wake_start_time > self.sleep_timeout:
                     self.log.debug("OLED sleep timeout, sleeping")
                     self.sleep()
+                    await asyncio.sleep(1)
                     continue
 
             await asyncio.sleep(.05)
