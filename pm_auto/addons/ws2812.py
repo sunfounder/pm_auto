@@ -28,6 +28,7 @@ default_config = {
 class WS2812Addon(Addon):
 
     def __init__(self, *args, **kwargs):
+        self.position = []
         super().__init__(*args, **kwargs)
 
         self.strip = None
@@ -75,6 +76,8 @@ class WS2812Addon(Addon):
                 self.log.error("Invalid rgb_led_count")
             else:
                 self.led_count = _count
+                if len(self.position) == 0:
+                    self.position = list(range(self.led_count))
                 patch['rgb_led_count'] = self.led_count
                 self.log.debug(f"Update LED count: {self.led_count}")
         if 'rgb_enable' in config:
@@ -117,6 +120,16 @@ class WS2812Addon(Addon):
                 self.style = _style
                 patch['rgb_style'] = self.style
                 self.log.debug(f"Update RGB style: {self.style}")
+        if 'rgb_position' in config:
+            _position = config['rgb_position']
+            if not isinstance(_position, list):
+                self.log.error(f"Invalid rgb_position: {_position}")
+            else:
+                self.position = list(_position)
+                if len(_position) != self.led_count:
+                    self.position += [i for i in range(self.led_count) if i not in self.position]
+                patch['rgb_position'] = self.position
+                self.log.debug(f"Update RGB position: {self.position}")
         return patch
 
 
@@ -188,6 +201,16 @@ class WS2812Addon(Addon):
 
     @log_error
     def create_rainbow_pattern(self, num, offset=0):
+        '''
+        Create a rainbow pattern with num LEDs.
+        
+        Args:
+            num (int): Number of LEDs in the pattern.
+            offset (float, optional): Offset for the hue value. Defaults to 0.
+        
+        Returns:
+            list: A list of hue values for each LED in the pattern.
+        '''
         pattern = []
         for i in range(num):
             hue = i * 360.0 / num
@@ -266,7 +289,13 @@ class WS2812Addon(Addon):
         self.strip.show()
         await asyncio.sleep(delay)
 
-    async def flow(self, order=None):
+    async def flow(self, reverse=False):
+        '''
+        Flow effect.
+        
+        Args:
+            reverse (bool, optional): Whether to reverse the flow direction. Defaults to False.
+        '''
         # self.log.debug(f"WS2812 Flow, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = self.led_count
         if self.counter >= self.counter_max:
@@ -274,8 +303,9 @@ class WS2812Addon(Addon):
         delay = map_value(self.speed, 0, 100, 0.5, 0.1)
         color = [int(x * self.brightness * 0.01) for x in self.color]
         
-        if order is None:
-            order = range(self.led_count)
+        order = list(self.position)
+        if reverse:
+            order.reverse()
 
         self.strip.fill(0)
         index = order[self.counter]
@@ -283,25 +313,30 @@ class WS2812Addon(Addon):
         self.strip.show()
         await asyncio.sleep(delay)
 
-    async def flow_reverse(self, order=None):
-        if order is None:
-            order = range(self.led_count)
-
-        order = order[::-1]
-        self.flow(order)
+    async def flow_reverse(self):
+        '''
+        Flow effect in reverse direction.
+        '''
+        await self.flow(reverse=True)
 
     async def rainbow(self, reverse=False):
+        '''
+        Rainbow effect.
+        
+        Args:
+            reverse (bool, optional): Whether to reverse the rainbow direction. Defaults to False.
+        '''
         # self.log.debug(f"WS2812 Rainbow, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
         self.counter_max = 360
         if self.counter >= self.counter_max:
             self.counter = 0
         delay = map_value(self.speed, 0, 100, 0.1, 0.005)
 
-        rainbow_pattern = self.create_rainbow_pattern(16, self.counter)
-        leds = list(range(self.led_count))
+        rainbow_pattern = self.create_rainbow_pattern(self.led_count, self.counter)
+        order = list(self.position)
         if reverse:
-            leds.reverse()
-        for i, led in enumerate(leds):
+            order.reverse()
+        for i, led in enumerate(order):
             hue = rainbow_pattern[i]
             color = self.hsl_to_rgb(hue, 1, self.brightness * 0.01)
             self.strip[led] = color
@@ -310,7 +345,7 @@ class WS2812Addon(Addon):
         await asyncio.sleep(delay)
 
     async def rainbow_reverse(self):
-        self.rainbow(reverse=True)
+        await self.rainbow(reverse=True)
 
     async def hue_cycle(self):
         # self.log.debug(f"WS2812 Hue Cycle, color: {self.color}, brightness: {self.brightness}, speed: {self.speed}")
