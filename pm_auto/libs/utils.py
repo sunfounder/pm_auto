@@ -115,3 +115,11 @@ def softlink_gpiochip0_to_gpiochip4():
         status, result = run_command('ln -s /dev/gpiochip0 /dev/gpiochip4')
         if status != 0:
             raise Exception(f'Failed to softlink gpiochip0 to gpiochip4: {result}')
+
+def hex_to_rgb(hex):
+    ''' str or hex, eg: 'ffffff', '#ffffff', '#FFFFFF' '''
+    hex = hex.strip().replace('#', '')
+    r = int(hex[0:2], 16)
+    g = int(hex[2:4], 16)
+    b = int(hex[4:6], 16)
+    return [r, g, b]

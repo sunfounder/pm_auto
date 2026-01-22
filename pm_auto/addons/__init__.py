@@ -36,6 +36,10 @@ def get_addons(peripherals: List[str]) -> List[Type[Addon]]:
     if 'ws2812' in peripherals:
         from .ws2812 import WS2812Addon
         addons.append(WS2812Addon)
+    if 'sf_rgb_led' in peripherals:
+        from .sunfounder_rgb_led import SunFounderRGBLEDAddon
+        addons.append(SunFounderRGBLEDAddon)
+    
     return addons
 
 class Addons:
