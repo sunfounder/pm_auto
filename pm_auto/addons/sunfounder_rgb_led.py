@@ -3,7 +3,7 @@ from enum import Enum
 
 from pm_auto.libs.addon import Addon
 from ..libs.i2c import I2C
-from ..libs.utils import hex_to_rgb
+from ..libs.utils import hex_to_rgb, log_error
 
 RGB_STYLES = [
     'solid', 'breathing', 'flow', 'flow_reverse', 'rainbow', 'rainbow_reverse', 'hue_cycle'
@@ -120,6 +120,7 @@ class SunFounderRGBLEDAddon(Addon):
                 self.log.debug(f"Update RGB style: {self.style}")
         return patch
 
+    @log_error
     def set_mode(self, mode: Mode):
         '''
         Set mode.
@@ -129,6 +130,7 @@ class SunFounderRGBLEDAddon(Addon):
         '''
         self.i2c.write_byte_data(self.Register.MODE.value, mode.value)
 
+    @log_error
     def set_num(self, num: int):
         '''
         Set LED number.
@@ -138,6 +140,7 @@ class SunFounderRGBLEDAddon(Addon):
         '''
         self.i2c.write_byte_data(self.Register.NUM.value, num)
 
+    @log_error
     def set_color(self, color: (tuple, str, list)):
         '''
         Set color.
@@ -155,6 +158,7 @@ class SunFounderRGBLEDAddon(Addon):
             raise Exception(f"Invalid color: {color}")
         self.i2c.write_i2c_block_data(self.Register.RED.value, color)
 
+    @log_error
     def set_brightness(self, brightness: int):
         '''
         Set brightness.
