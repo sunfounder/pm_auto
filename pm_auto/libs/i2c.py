@@ -42,20 +42,29 @@ class I2C():
         return os.path.exists("/dev/i2c-{}".format(bus))
 
     @staticmethod
-    def scan(busnum=1, force=False):
+    def scan(bus: int = 1, force: bool = False) -> list:
+        """Scan the I2C bus for devices
+
+        Args:
+            bus (int, optional): I2C bus number, default is 1
+            force (bool, optional): True if force to access the I2C bus, False otherwise, default is False
+
+        Returns:
+            list: List of I2C addresses of devices found
+        """
         devices = []
         for addr in range(0x03, 0x77 + 1):
-            read = SMBus.read_byte, (addr,), {'force':force}
-            write = SMBus.write_byte, (addr, 0), {'force':force}
-            for func, args, kwargs in (read, write):
-                try:
-                    with SMBus(busnum) as bus:
-                        data = func(bus, *args, **kwargs)
-                        devices.append(addr)
-                        break
-                except OSError as expt:
-                    if expt.errno == 16:
-                        # just busy, maybe permanent by a kernel driver or just temporary by some user code
-                        pass
+            try:
+                with SMBus(bus) as smbus:
+                    # Read a byte from the address
+                    smbus.write_quick(addr)
+                    devices.append(addr)
+            except OSError as expt:
+                # Ignore device busy or unresponsive errors
+                if expt.errno == 16:  # Device or resource busy
+                    # print(f"Address 0x{addr:02X} busy")
+                    pass
+                # Other errors continue to try
+                continue
         return devices
 
