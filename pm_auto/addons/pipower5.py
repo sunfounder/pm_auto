@@ -105,8 +105,8 @@ class PiPower5Addon(Addon):
         self.event.publish('pipower5_input_unplugged', button_state)
 
     @log_error
-    def handle_data_changed(self, data):
-        self.event.publish('data_changed', data)
+    def handle_data_changed(self, data, delete_keys: list = []):
+        self.event.publish('data_changed', data, delete_keys=delete_keys)
 
     @log_error
     def update_config(self, config, init=False):

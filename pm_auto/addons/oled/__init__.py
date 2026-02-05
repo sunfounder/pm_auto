@@ -62,7 +62,12 @@ class OLEDAddon(Addon):
         self.event.subscribe("data_changed", self.handle_data_changed)
 
     @log_error
-    def handle_data_changed(self, data):
+    def handle_data_changed(self, data, delete_keys: list = []):
+        # Delete old data
+        for key in delete_keys:
+            if key in self.data:
+                del self.data[key]
+
         self.data.update(data)
 
     @log_error

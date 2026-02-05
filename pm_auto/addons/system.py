@@ -28,6 +28,10 @@ class SystemAddon(Addon):
         self.tasks = TaskScheduler()
         self._is_ready = True
 
+        # A list of last disk keys, for knowing which disk is gone,
+        # and need to be removed from data
+        self.disk_keys = []
+
     @log_error
     def _on_shutdown(self, *args):
         if len(args) == 0:
@@ -112,8 +116,20 @@ class SystemAddon(Addon):
             data[f'disk_{disk_name}_used'] = int(disk.used)
             data[f'disk_{disk_name}_free'] = int(disk.free)
             data[f'disk_{disk_name}_percent'] = float(disk.percent)
+            if (disk.temperature is not None):
+                data[f'disk_{disk_name}_temperature'] = float(disk.temperature)
         
-        self.event.publish('data_changed', data)
+        # Get current disk keys
+        keys = list(data.keys())
+        # Find disk keys that is gone
+        delete_keys = []
+        for key in self.disk_keys:
+            if key not in keys:
+                delete_keys.append(key)
+        # Update disk keys
+        self.disk_keys = keys
+        
+        self.event.publish('data_changed', data, delete_keys=delete_keys)
 
     @log_error
     async def _main(self):
