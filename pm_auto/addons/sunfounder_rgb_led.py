@@ -19,7 +19,7 @@ class SunFounderRGBLEDAddon(Addon):
             self.rgb = SunFounderRGBLED()
             self._is_ready = True
         except Exception as e:
-            self.log.critical(f"Failed to initialize SunFounderRGBLEDAddon: {e}")
+            self.log.error(f"Failed to initialize SunFounderRGBLEDAddon: {e}")
             return
         
     @log_error
