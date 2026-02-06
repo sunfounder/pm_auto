@@ -118,7 +118,7 @@ class SystemAddon(Addon):
             data[f'disk_{disk_name}_percent'] = float(disk.percent)
             if (disk.temperature is not None):
                 data[f'disk_{disk_name}_temperature'] = float(disk.temperature)
-        
+                
         # Get current disk keys
         keys = list(data.keys())
         # Find disk keys that is gone
