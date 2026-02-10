@@ -18,8 +18,8 @@ def get_available_pages(peripherals):
 
 class OLEDAddon(Addon):
     REFRESH_INTERVAL = 1 # seconds, how often to refresh the display
-    MIN_SLEEP_TIMEOUT = 5 # 5s, minimum sleep timeout
-    MAX_SLEEP_TIMEOUT = 3600 # 600s, 10min, maximum sleep timeout
+    MIN_SLEEP_TIMEOUT = 0 # 5s, minimum sleep timeout
+    MAX_SLEEP_TIMEOUT = 3600 # 3600s, 10min, maximum sleep timeout
 
     DEFAULT_CONFIG = {
         'oled_enable': True,
@@ -238,7 +238,7 @@ class OLEDAddon(Addon):
                     page = self.pages[self.page_index]
                     page.main(self.oled, self.data, self.config)
 
-                if time.time() - self.wake_start_time > self.sleep_timeout:
+                if self.sleep_timeout > 0 and time.time() - self.wake_start_time > self.sleep_timeout:
                     self.log.debug("OLED sleep timeout, sleeping")
                     self.sleep()
                     await asyncio.sleep(1)
