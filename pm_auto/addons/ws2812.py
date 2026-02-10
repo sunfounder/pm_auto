@@ -75,6 +75,9 @@ class WS2812Addon(Addon):
             if not isinstance(_count, int):
                 self.log.error("Invalid rgb_led_count")
             else:
+                if 'rgb_led_count_min' in self.config and _count < self.config['rgb_led_count_min']:
+                    _count = self.config['rgb_led_count_min']
+                    self.log.warning(f"rgb_led_count {_count} too small, available led count: >= {self.config['rgb_led_count_min']}")
                 self.led_count = _count
                 if len(self.position) == 0:
                     self.position = list(range(self.led_count))

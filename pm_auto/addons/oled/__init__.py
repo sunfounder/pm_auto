@@ -129,9 +129,10 @@ class OLEDAddon(Addon):
             for page in config['oled_pages']:
                 if not init and page not in self.available_pages:
                     self.log.warning(f"Invalid oled page {page}, must be in {self.available_pages}")
+                elif page in new_pages:
+                    self.log.warning(f"Duplicate oled page {page}")
                 else:
                     new_pages.append(page)
-            new_pages = list(set(new_pages))
             if not init:
                 self.update_pages(pages=new_pages)
             self.oled_pages = new_pages
@@ -234,6 +235,7 @@ class OLEDAddon(Addon):
                 if self.last_page_index != self.page_index or time.time() - last_refresh_time > self.REFRESH_INTERVAL:
                     self.last_page_index = self.page_index
                     last_refresh_time = time.time()
+                    print(f"page_index: {self.page_index}")
                     page = self.pages[self.page_index]
                     page.main(self.oled, self.data, self.config)
 
