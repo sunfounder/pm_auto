@@ -19,6 +19,7 @@ DEFAULT_CONFIG = {
     'oled_sleep': False,
     'oled_sleep_timeout': 10,
     'temperature_unit': 'C',
+    'virtual_interface_prefixes': ['veth', 'br-', 'docker', 'virbr', 'vmnet'],
     'gpio_fan_mode': 1,
     'gpio_fan_led_pin': 5,
     "gpio_fan_pin": 6,
