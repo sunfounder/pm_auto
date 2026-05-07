@@ -36,6 +36,10 @@ class PageMix(OLEDPage):
         temp = cpu_temp_c if temperature_unit == 'C' else cpu_temp_f
         temp = round(temp, 1)
 
+        memory_percent = data.get("memory_percent", 0)
+        if memory_percent >= 100:
+            memory_percent = 100
+
         oled.clear()
 
         # ips
@@ -47,7 +51,7 @@ class PageMix(OLEDPage):
                 self.ip_index = 0
                 self.cycle_time_start = time.time()
                 self.ip_num = len(ips)
-        
+
             if time.time() - self.cycle_time_start >= scroll_interval:
                 self.cycle_time_start = time.time()
                 self.ip_index += 1
@@ -63,13 +67,18 @@ class PageMix(OLEDPage):
                 oled.draw_text(f'{ip}', 22, 0, size=14, font_path=font)
 
         # cpu
-        oled.draw_icon(cpu_icon, 0, 25, scale=1, invert=False)
-        oled.draw_text('CPU', 28, 25, size=10, font_path=font)
-        oled.draw_text(f"{cpu_usage}%", 25, 35, size=14, font_path=font)
+        oled.draw_icon(cpu_icon, 0, 16, scale=1, invert=False)
+        oled.draw_text('CPU', 28, 14, size=10, font_path=font)
+        oled.draw_text(f"{cpu_usage}%", 25, 24, size=14, font_path=font)
 
         # Temp
-        oled.draw_icon(temp_icon, 68, 25, scale=1, invert=False)
-        oled.draw_text('TEMP', 91, 25, size=10, font_path=font)
-        oled.draw_text(f"{int(temp):d}°{temperature_unit}", 89, 35, size=14, font_path=font)
+        oled.draw_icon(temp_icon, 68, 16, scale=1, invert=False)
+        oled.draw_text('TEMP', 91, 14, size=10, font_path=font)
+        oled.draw_text(f"{int(temp):d}°{temperature_unit}", 89, 24, size=14, font_path=font)
+
+        # RAM
+        oled.draw_icon(ram_icon, 0, 40, scale=1, invert=False)
+        oled.draw_text('RAM', 28, 38, size=10, font_path=font)
+        oled.draw_text(f"{memory_percent}%", 25, 48, size=12, font_path=font)
 
         oled.display()
