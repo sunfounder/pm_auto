@@ -43,7 +43,7 @@ class PagePerformance(OLEDPage):
         oled.draw_icon(ram_icon, 0, 32, scale=1, invert=False, dither=False, threshold=127)
         oled.draw_text('RAM', 28, 30, size=10, font_path=font)
         oled.draw_text(f"{memory_percent}%", 25, 38, size=14, font_path=font)
-        oled.draw_text(f"{memory_used} / {memory_total} {memory_unit}", 0, 53, size=12, font_path=font)
+        oled.draw_text(f"{memory_used} / {memory_total} {memory_unit}", 0, 51, size=12, font_path=font)
 
         oled.draw_icon(temp_icon, 70, 2, scale=1, invert=False)
         oled.draw_text('TEMP', 93, 0, size=10, font_path=font)
