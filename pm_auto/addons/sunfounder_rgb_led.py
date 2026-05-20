@@ -1,6 +1,6 @@
 
 from pm_auto.libs.addon import Addon
-from ..libs.sunfounder_rgb_led import SunFounderRGBLED, RGB_STYLES
+from ..libs.sunfounder_rgb_led import SunFounderRGBLED, RGB_STYLES, MAX_LEDS
 from ..libs.utils import log_error
 
 class SunFounderRGBLEDAddon(Addon):
@@ -21,26 +21,20 @@ class SunFounderRGBLEDAddon(Addon):
         except Exception as e:
             self.log.error(f"Failed to initialize SunFounderRGBLEDAddon: {e}")
             return
-        
+
     @log_error
     def update_config(self, config, init=False):
-
-        '''
-        Update config.
-
-        Args:
-            config (Dict): New config dict.
-            init (bool): True if init, False otherwise.
-
-        Returns:
-            A dict of config patch to update the config file.
-        '''
         patch = {}
         if 'rgb_led_count' in config:
             _count = config['rgb_led_count']
             if not isinstance(_count, int):
                 self.log.error("Invalid rgb_led_count")
             else:
+                if _count < 1:
+                    _count = 1
+                elif _count > MAX_LEDS:
+                    self.log.warning(f"rgb_led_count {_count} exceeds hardware max {MAX_LEDS}, clamped")
+                    _count = MAX_LEDS
                 if not init:
                     self.rgb.set_num(_count)
                 self.count = _count
@@ -71,6 +65,10 @@ class SunFounderRGBLEDAddon(Addon):
             if not isinstance(_brightness, int):
                 self.log.error(f"Invalid rgb_brightness: {_brightness}")
             else:
+                if _brightness < 0:
+                    _brightness = 0
+                elif _brightness > 100:
+                    _brightness = 100
                 if not init:
                     self.rgb.set_brightness(_brightness)
                 self.brightness = _brightness
@@ -81,6 +79,10 @@ class SunFounderRGBLEDAddon(Addon):
             if not isinstance(_speed, int):
                 self.log.error(f"Invalid rgb_speed: {_speed}")
             else:
+                if _speed < 0:
+                    _speed = 0
+                elif _speed > 100:
+                    _speed = 100
                 if not init:
                     self.rgb.set_speed(_speed)
                 self.speed = _speed
@@ -101,12 +103,12 @@ class SunFounderRGBLEDAddon(Addon):
     @log_error
     async def _start(self) -> None:
         self.log.info("RGB LED started")
-        self.rgb.set_enable(self.enable)
         self.rgb.set_num(self.count)
-        self.rgb.set_style(self.style)
-        self.rgb.set_speed(self.speed)
-        self.rgb.set_brightness(self.brightness)
         self.rgb.set_color(self.color)
+        self.rgb.set_brightness(self.brightness)
+        self.rgb.set_speed(self.speed)
+        self.rgb.set_style(self.style)
+        self.rgb.set_enable(self.enable)
 
     @log_error
     async def _stop(self) -> None:

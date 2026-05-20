@@ -4,11 +4,22 @@ from enum import Enum
 from ..libs.i2c import I2C
 from ..libs.utils import hex_to_rgb
 
+# I2C register map size (matches CH32V003 firmware registerMap[255])
+REGISTER_SIZE = 255
+# Hardware limit: DMA buffer holds max 23 LEDs (WS2812_MAX_LEDS in firmware)
+MAX_LEDS = 23
+
 RGB_STYLES = [
     'solid', 'breathing', 'flow', 'flow_reverse', 'rainbow', 'rainbow_reverse', 'hue_cycle'
 ]
 
 class SunFounderRGBLED():
+    """I2C driver for CH32V003-based RGB LED controller (Pironman 5 UPS RGB firmware).
+
+    Communicates via I2C at address 0x6A. The firmware acts as an I2C slave with a
+    255-byte register map. First byte of each write = register address, subsequent bytes
+    are written sequentially with auto-increment. See register_map.h in firmware source.
+    """
     ADDRESS = 0x6A
 
     class Mode(Enum):
@@ -41,23 +52,11 @@ class SunFounderRGBLED():
         self.i2c = I2C(self.ADDRESS)
 
     def set_mode(self, mode: (Mode, str)):
-        '''
-        Set mode.
-
-        Args:
-            mode (Mode, str): Mode to set.
-        '''
         if isinstance(mode, str):
             mode = self.Mode[mode.upper()]
         self.i2c.write_byte_data(self.Register.MODE.value, mode.value)
 
     def set_enable(self, enable: bool):
-        '''
-        Set enable.
-
-        Args:
-            enable (bool): Enable to set.
-        '''
         self.enable = enable
         if enable:
             self.set_mode(self.style)
@@ -65,12 +64,6 @@ class SunFounderRGBLED():
             self.set_mode(self.Mode.OFF)
 
     def set_style(self, style: (Mode, str)):
-        '''
-        Set style.
-
-        Args:
-            style (Mode, str): Style to set.
-        '''
         if isinstance(style, self.Mode):
             style = style.name.lower()
         self.style = style
@@ -78,22 +71,14 @@ class SunFounderRGBLED():
             self.set_mode(style)
 
     def set_num(self, num: int):
-        '''
-        Set LED number.
-
-        Args:
-            num (int): LED number to set.
-        '''
+        if num > MAX_LEDS:
+            num = MAX_LEDS
+        if num < 0:
+            num = 0
         self.led_count = num
         self.i2c.write_byte_data(self.Register.NUM.value, num)
 
     def set_color(self, color: (tuple, str, list)):
-        '''
-        Set color.
-
-        Args:
-            color (tuple, str, list): Color to set.
-        '''
         if isinstance(color, str):
             color = hex_to_rgb(color)
         elif isinstance(color, tuple):
@@ -106,21 +91,17 @@ class SunFounderRGBLED():
         self.i2c.write_i2c_block_data(self.Register.RED.value, color)
 
     def set_brightness(self, brightness: int):
-        '''
-        Set brightness.
-
-        Args:
-            brightness (int): Brightness to set.
-        '''
+        if brightness < 0:
+            brightness = 0
+        elif brightness > 100:
+            brightness = 100
         self.brightness = brightness
         self.i2c.write_byte_data(self.Register.BRIGHTNESS.value, brightness)
 
     def set_speed(self, speed: int):
-        '''
-        Set speed.
-
-        Args:
-            speed (int): Speed to set.
-        '''
+        if speed < 0:
+            speed = 0
+        elif speed > 100:
+            speed = 100
         self.speed = speed
         self.i2c.write_byte_data(self.Register.SPEED.value, speed)
