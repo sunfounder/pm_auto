@@ -130,7 +130,7 @@ class PiPower5Addon(Addon):
 
     @log_error
     async def _start(self):
-        self.service.running = True
+        self.service.start()
 
     @log_error
     async def _stop(self):

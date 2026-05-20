@@ -88,7 +88,7 @@ class SunFounderRGBLED():
         else:
             raise Exception(f"Invalid color: {color}")
         self.color = color
-        self.i2c.write_i2c_block_data(self.Register.RED.value, color)
+        self._write_rgb_block()
 
     def set_brightness(self, brightness: int):
         if brightness < 0:
@@ -96,7 +96,7 @@ class SunFounderRGBLED():
         elif brightness > 100:
             brightness = 100
         self.brightness = brightness
-        self.i2c.write_byte_data(self.Register.BRIGHTNESS.value, brightness)
+        self._write_rgb_block()
 
     def set_speed(self, speed: int):
         if speed < 0:
@@ -104,4 +104,13 @@ class SunFounderRGBLED():
         elif speed > 100:
             speed = 100
         self.speed = speed
-        self.i2c.write_byte_data(self.Register.SPEED.value, speed)
+        self._write_rgb_block()
+
+    def _write_rgb_block(self):
+        """Write R, G, B, brightness, speed in a single I2C transaction starting at RED (0x10).
+
+        Matches the firmware's recommended burst-write pattern. Avoids hitting the
+        MCU's __disable_irq() critical section with multiple separate writes.
+        """
+        data = self.color + [self.brightness, self.speed]
+        self.i2c.write_i2c_block_data(self.Register.RED.value, data)

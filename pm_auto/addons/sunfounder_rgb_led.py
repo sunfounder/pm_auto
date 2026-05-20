@@ -104,9 +104,9 @@ class SunFounderRGBLEDAddon(Addon):
     async def _start(self) -> None:
         self.log.info("RGB LED started")
         self.rgb.set_num(self.count)
+        self.rgb.brightness = self.brightness
+        self.rgb.speed = self.speed
         self.rgb.set_color(self.color)
-        self.rgb.set_brightness(self.brightness)
-        self.rgb.set_speed(self.speed)
         self.rgb.set_style(self.style)
         self.rgb.set_enable(self.enable)
 
