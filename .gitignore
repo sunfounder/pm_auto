@@ -1,3 +1,34 @@
-.vscode
-*/__pycache__/*
-pm_auto.egg-info*
+# Claude
+.claude/
+
+# Environment & secrets
+.env
+.env.*
+*.secret
+secrets.*
+credentials.*
+*.pem
+*.key
+*secret*
+*credential*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+pip-wheel-metadata/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+.obsidian/workspace.json
+.trash/

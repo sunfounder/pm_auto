@@ -1,32 +1,18 @@
 # PM Auto
 
-Pironman Auto is a tool to control all peripherals on your Pironman.
-
-- [PM Auto](#pm-auto)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Addonlize](#addonlize)
-  - [About SunFounder](#about-sunfounder)
-  - [Contact us](#contact-us)
+Pironman Auto — Python library for controlling all peripherals on Pironman devices.
 
 ## Installation
 
 ```bash
-# Install development dependencies
-apt-get -y install python3 python3-pip python3-venv git
-# for lgpio
-apt-get -y install liblgpio-dev
-# for pillow
-apt-get -y install libfreetype6-dev libjpeg-dev libopenjp2-7
-# Create a virtual environment
-python3 -m venv venv
+# System dependencies
+apt-get -y install python3 python3-pip python3-venv git liblgpio-dev libfreetype6-dev libjpeg-dev libopenjp2-7
 
-# Clone the repository
-git clone https://github.com/sunfounder/pm_auto.git
-# Activate the virtual environment
-source venv/bin/activate
-# Install the package
-pip3 install.
+# From GitHub (tagged release)
+pip install git+https://github.com/sunfounder/pm_auto.git@2.0.0
+
+# Or from v2 branch (auto bug fixes, backward-compatible)
+pip install git+https://github.com/sunfounder/pm_auto.git@v2
 ```
 
 ## Usage
@@ -35,34 +21,45 @@ pip3 install.
 from pm_auto.pm_auto import PMAuto
 
 config = {
-    "peripherals": [
-      'oled',
-      'ws2812',
-    ],
+    "peripherals": ["oled", "ws2812"],
     "temperature_unit": "C",
-},
+    "rgb_led_count": 4,
+    "rgb_enable": True,
+    "rgb_color": "#0a1aff",
+    "rgb_brightness": 50,
+    "rgb_style": "breathing",
+    "rgb_speed": 50,
+}
 
 pm = PMAuto(config)
 pm.start()
-
 ```
 
-## Addonlize
+## Supported Peripherals
 
-```mermaid
-graph TD
-  pm_auto[PM Auto]
-  addon[Addon]
+| Key | Addon | Description |
+|-----|-------|-------------|
+| `oled` | OLED | SSD1306 I2C display |
+| `ws2812` | WS2812 | SPI addressable RGB LEDs |
+| `sf_rgb_led` | SunFounder RGB | I2C RGB LEDs via CH32V003 MCU |
+| `gpio_fan_state` | Fan | GPIO fan speed control |
+| `pwm_fan_speed` | Fan | PWM fan control |
+| `vibration_switch` | Vibration | GPIO vibration sensor |
+| `system` | System | CPU/memory/disk monitoring |
+| `rgb_matrix` | RGB Matrix | LED matrix display |
 
-  pm_auto--config-->addon--read_data-->pm_auto
-```
+## Versioning
+
+Follow [Semantic Versioning](https://semver.org/):
+- `A.B.C` — A = breaking changes, B = new features, C = bug fixes
+- Each release is tagged (e.g. `2.0.0`)
+- `v2` branch is the active development line (backward-compatible within v2)
 
 ## About SunFounder
-SunFounder is a company focused on STEAM education with products like open source robots, development boards, STEAM kit, modules, tools and other smart devices distributed globally. In SunFounder, we strive to help elementary and middle school students as well as hobbyists, through STEAM education, strengthen their hands-on practices and problem-solving abilities. In this way, we hope to disseminate knowledge and provide skill training in a full-of-joy way, thus fostering your interest in programming and making, and exposing you to a fascinating world of science and engineering. To embrace the future of artificial intelligence, it is urgent and meaningful to learn abundant STEAM knowledge.
 
-## Contact us
-website:
-    www.sunfounder.com
+SunFounder is a company focused on STEAM education with products like open source robots, development boards, STEAM kit, modules, tools and other smart devices distributed globally.
 
-E-mail:
-    service@sunfounder.com
+## Contact
+
+- Website: [www.sunfounder.com](https://www.sunfounder.com)
+- Email: service@sunfounder.com
