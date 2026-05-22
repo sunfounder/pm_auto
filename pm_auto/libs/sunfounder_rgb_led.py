@@ -107,10 +107,18 @@ class SunFounderRGBLED():
         self._write_rgb_block()
 
     def _write_rgb_block(self):
-        """Write R, G, B, brightness, speed in a single raw I2C transaction.
+        """Write R, G, B, brightness, speed via individual I2C byte writes.
 
-        Uses i2c_rdwr to send [reg, *data] without an SMBus length byte,
-        matching the CH32V003 firmware's raw I2C ISR protocol.
+        Uses write_byte_data (SMBus Write Byte) with small delays to avoid
+        overwhelming the CH32V003 firmware's I2C ISR.
         """
-        data = self.color + [self.brightness, self.speed]
-        self.i2c.write_reg_data(self.Register.RED.value, data)
+        import time
+        self.i2c.write_byte_data(self.Register.RED.value, self.color[0])
+        time.sleep(0.003)
+        self.i2c.write_byte_data(self.Register.GREEN.value, self.color[1])
+        time.sleep(0.003)
+        self.i2c.write_byte_data(self.Register.BLUE.value, self.color[2])
+        time.sleep(0.003)
+        self.i2c.write_byte_data(self.Register.BRIGHTNESS.value, self.brightness)
+        time.sleep(0.003)
+        self.i2c.write_byte_data(self.Register.SPEED.value, self.speed)
