@@ -85,7 +85,8 @@ class Addons:
         patch = {}
         for addon in self.addons.values():
             new_patch = addon.update_config(config)
-            patch.update(new_patch)
+            if new_patch is not None:
+                patch.update(new_patch)
         return patch
 
     async def start(self) -> None:
