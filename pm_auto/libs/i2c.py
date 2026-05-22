@@ -1,8 +1,8 @@
-from smbus2 import SMBus
+from smbus2 import SMBus, i2c_msg
 
 class I2C():
 
-    def __init__(self, address, bus=1):     
+    def __init__(self, address, bus=1):
         self._bus = bus
         self._address = address
         self._smbus = SMBus(self._bus)
@@ -22,6 +22,16 @@ class I2C():
 
     def write_i2c_block_data(self, reg, data):
         return self._smbus.write_i2c_block_data(self._address, reg, data)
+
+    def write_reg_data(self, reg, data):
+        """Write consecutive register data via raw I2C write (no SMBus length byte).
+
+        The CH32V003 firmware I2C ISR expects [register_addr, data0, data1, ...]
+        with auto-increment. This method uses i2c_rdwr to send a raw I2C
+        transaction without the SMBus block-write length byte.
+        """
+        msg = i2c_msg.write(self._address, bytes([reg]) + bytes(data))
+        self._smbus.i2c_rdwr(msg)
 
     def read_byte(self):
         return self._smbus.read_byte(self._address)
