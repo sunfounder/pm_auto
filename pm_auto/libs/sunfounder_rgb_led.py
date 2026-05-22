@@ -107,18 +107,27 @@ class SunFounderRGBLED():
         self._write_rgb_block()
 
     def _write_rgb_block(self):
-        """Write R, G, B, brightness, speed via individual I2C byte writes.
+        """Write R, G, B, brightness, speed with retry for I2C bus contention.
 
-        Uses write_byte_data (SMBus Write Byte) with small delays to avoid
-        overwhelming the CH32V003 firmware's I2C ISR.
+        The CH32V003 firmware disables IRQs during WS2812 DMA transfers (~750us),
+        causing I2C writes to fail with EREMOTEIO if they land in this window.
+        Retry up to 3 times with jittered delays to find a non-contended window.
         """
         import time
-        self.i2c.write_byte_data(self.Register.RED.value, self.color[0])
-        time.sleep(0.003)
-        self.i2c.write_byte_data(self.Register.GREEN.value, self.color[1])
-        time.sleep(0.003)
-        self.i2c.write_byte_data(self.Register.BLUE.value, self.color[2])
-        time.sleep(0.003)
-        self.i2c.write_byte_data(self.Register.BRIGHTNESS.value, self.brightness)
-        time.sleep(0.003)
-        self.i2c.write_byte_data(self.Register.SPEED.value, self.speed)
+        import random
+        for attempt in range(3):
+            try:
+                self.i2c.write_byte_data(self.Register.RED.value, self.color[0])
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.GREEN.value, self.color[1])
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.BLUE.value, self.color[2])
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.BRIGHTNESS.value, self.brightness)
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.SPEED.value, self.speed)
+                return
+            except OSError:
+                if attempt < 2:
+                    time.sleep(0.01 + random.uniform(0, 0.005))
+        raise
