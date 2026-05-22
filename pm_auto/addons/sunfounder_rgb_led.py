@@ -37,8 +37,6 @@ class SunFounderRGBLEDAddon(Addon):
                     _count = MAX_LEDS
                 if not init:
                     self.rgb.set_num(_count)
-                    if self.enable:
-                        self.rgb.set_mode(self.style)
                 self.count = _count
                 patch['rgb_led_count'] = _count
                 self.log.debug(f"Update LED count: {_count}")
