@@ -25,12 +25,30 @@ class SystemAddon(Addon):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.event.subscribe('shutdown', self._on_shutdown)
+        self.event.subscribe('request_ips', self._on_request_ips)
         self.tasks = TaskScheduler()
         self._is_ready = True
 
         # A list of last disk keys, for knowing which disk is gone,
         # and need to be removed from data
         self.disk_keys = []
+
+    @log_error
+    def fetch_ip_data(self):
+        ips = get_ips()
+        result = {'ips': ips}
+        for name in ips:
+            result[f'ip_{name}'] = ips[name]
+        macs = get_macs()
+        for name in macs:
+            result[f'mac_{name}'] = macs[name]
+        result['network_type'] = '&'.join(get_network_connection_type())
+        return result
+
+    @log_error
+    def _on_request_ips(self, *args):
+        data = self.fetch_ip_data()
+        self.event.publish('ip_data', data)
 
     @log_error
     def _on_shutdown(self, *args):
@@ -55,9 +73,6 @@ class SystemAddon(Addon):
     def task_once(self):
         data = {}
         data['cpu_count'] = int(get_cpu_count())
-        macs = get_macs()
-        for name in macs:
-            data[f'mac_{name}'] = macs[name]
         self.event.publish('data_changed', data)
 
     @log_error
@@ -93,14 +108,6 @@ class SystemAddon(Addon):
     @log_error
     def task_3s(self):
         data = {}
-        ips = get_ips()
-        data['ips'] = ips
-        for name in ips:
-            data[f'ip_{name}'] = ips[name]
-        
-        network_connection_type = get_network_connection_type()
-        data['network_type'] = "&".join(network_connection_type)
-
         self.event.publish('data_changed', data)
 
     @log_error
@@ -136,7 +143,6 @@ class SystemAddon(Addon):
         self.log.debug("SystemAddon main loop started")
         await self.tasks.run_once(self.task_once, 1)
         await self.tasks.run_periodically(self.task_1s, 1)
-        await self.tasks.run_periodically(self.task_3s, 3)
         await self.tasks.run_periodically(self.task_5s, 5)
         while self.running:
             await asyncio.sleep(1)
