@@ -12,6 +12,8 @@ error_icon = get_icon('icon_error_20.png')
 font = get_font('UbuntuSans-Regular.ttf')
 
 class PageIPs(OLEDPage):
+    needs_ip = True
+
     def __init__(self):
         super().__init__()
         self.ip_index = 0

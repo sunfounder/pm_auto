@@ -60,6 +60,7 @@ class OLEDAddon(Addon):
         self.event.subscribe("shutdown", self.show_shutdown_screen)
         self.event.subscribe("oled_show_shutdown_screen", self.show_shutdown_screen)
         self.event.subscribe("data_changed", self.handle_data_changed)
+        self.event.subscribe('ip_data', self.handle_ip_data)
 
     @log_error
     def handle_data_changed(self, data, delete_keys: list = []):
@@ -69,6 +70,11 @@ class OLEDAddon(Addon):
                 del self.data[key]
 
         self.data.update(data)
+
+    @log_error
+    def handle_ip_data(self, data):
+        self.data.update(data)
+        self.last_page_index = -1
 
     @log_error
     def update_config(self, config, init=False):
@@ -230,7 +236,12 @@ class OLEDAddon(Addon):
                         self.page_index = len(self.pages) - 1
                     self.wake_start_time = time.time()
                 self.is_page_prev = False
-                    
+
+            if self.wake_flag and self.last_page_index != self.page_index:
+                page = self.pages[self.page_index]
+                if hasattr(page, 'needs_ip') and page.needs_ip:
+                    self.event.publish('request_ips')
+
             if self.wake_flag:
                 if self.last_page_index != self.page_index or time.time() - last_refresh_time > self.REFRESH_INTERVAL:
                     self.last_page_index = self.page_index
