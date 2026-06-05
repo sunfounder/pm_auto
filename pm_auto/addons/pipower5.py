@@ -1,143 +1,147 @@
 from pm_auto.libs.utils import log_error
 from pm_auto.libs.addon import Addon
+import asyncio
 
 class PiPower5Addon(Addon):
-    LOOP_INTERVAL = 0.1 # 100ms
-
-    REG_PWR_BTN_STATE= 154
-    REG_WRITE_POWER_BTN_STATE = 12
+    LOOP_INTERVAL = 1
 
     DEFAULT_CONFIG = {
         'shutdown_percentage': 10,
+        'pipower5_buzzer_volume': 5,
+        'pipower5_buzz_on': [],
+        'pipower5_buzz_sequence': {},
+        'send_email_on': [],
     }
 
     @log_error
     def __init__(self, *args, config=None, log=None, **kwargs):
         super().__init__(*args, **kwargs)
-        name = self.device_info['name']
-        from pipower5.pipower5_service import PiPower5Service
-        self.service = PiPower5Service(config=config, device_name=name, log=log)
-        if not self.service.is_ready():
-            self.log.error('PiPower5 Init error')
-            return
-        
-        self.service.set_on_config_changed(self.update_config)
-        self.service.set_on_button_click(self.handle_button_click)
-        self.service.set_on_button_double_click(self.handle_button_double_click)
-        self.service.set_on_button_long_press(self.handle_button_long_press)
-        self.service.set_on_button_long_press_released(self.handle_button_long_press_released)
-        self.service.set_on_battery_critical_shutdown(self.handle_low_battery_shutdown)
-        self.service.set_on_button_shutdown(self.handle_button_shutdown)
-        self.service.set_on_battery_voltage_critical_shutdown(self.handle_low_voltage_shutdown)
-        self.service.set_on_low_battery(self.handle_low_power)
-        self.service.set_on_power_insufficient(self.handle_power_insufficient)
-        self.service.set_on_battery_activated(self.handle_battery_activated)
-        self.service.set_on_power_restore(self.handle_input_plugged_in)
-        self.service.set_on_power_disconnected(self.handle_input_unplugged)
-        self.service.set_on_data_changed(self.handle_data_changed)
 
+        from pipower5.pipower5 import PiPower5
+        self.pipower5 = PiPower5()
+        if not self.pipower5.is_ready():
+            self.log.error('PiPower5 not ready')
+            self._is_ready = False
+            return
+
+        self.update_config(config, init=True)
+
+        try:
+            from pipower5.email_sender import EmailSender
+            self.email_sender = EmailSender(config, log=self.log)
+        except Exception as e:
+            self.log.warning(f'Email sender init failed: {e}')
+            self.email_sender = None
+
+        self._last_button_state = None
+        self._last_shutdown_request = None
+        self._was_input_plugged_in = self.pipower5.read_is_input_plugged_in()
         self._is_ready = True
 
     @log_error
+    def is_ready(self):
+        return self._is_ready
+
+    @log_error
     def test_smtp(self):
-        return self.service.test_smtp()
+        if self.email_sender:
+            return self.email_sender.test_smtp()
+        return False
 
     @log_error
     def play_pipower5_buzzer(self, event):
-        self.service.buzz_event(event)
-
-    @log_error
-    def handle_button_click(self, button_state):
-        self.log.info(f'PiPower button click: {button_state}')
-        self.event.publish('pipower5_button_click', button_state)
-
-    @log_error
-    def handle_button_double_click(self, button_state):
-        self.log.info(f'PiPower button double click: {button_state}')
-        self.event.publish('pipower5_button_double_click', button_state)
-
-    @log_error
-    def handle_button_long_press(self, button_state):
-        self.log.info(f'PiPower button long press: {button_state}')
-        self.event.publish('pipower5_button_long_press', 'button_long_press')
-
-    @log_error
-    def handle_button_long_press_released(self, button_state):
-        self.log.info(f'PiPower button long press released: {button_state}')
-        self.event.publish('pipower5_button_long_press_released', 'button_long_press_released')
-
-
-
-    @log_error
-    def handle_low_battery_shutdown(self, button_state):
-        self.log.info(f'PiPower low battery shutdown: {button_state}')
-        self.event.publish('pipower5_low_battery_shutdown', button_state)
-
-    @log_error
-    def handle_button_shutdown(self, button_state):
-        self.log.info(f'PiPower button shutdown: {button_state}')
-        self.event.publish('pipower5_button_shutdown', button_state)
-
-    @log_error
-    def handle_low_voltage_shutdown(self, button_state):
-        self.log.info(f'PiPower low voltage shutdown: {button_state}')
-        self.event.publish('pipower5_low_voltage_shutdown', button_state)
-
-    @log_error
-    def handle_low_power(self, button_state):
-        self.log.warning(f'PiPower low power: {button_state}')
-        self.event.publish('pipower5_low_power', button_state)
-
-    @log_error
-    def handle_power_insufficient(self, button_state):
-        self.log.warning(f'PiPower power insufficient: {button_state}')
-        self.event.publish('pipower5_power_insufficient', button_state)
-
-    @log_error
-    def handle_battery_activated(self, button_state):
-        self.log.warning(f'PiPower battery activated: {button_state}')
-        self.event.publish('pipower5_battery_activated', button_state)
-
-    @log_error
-    def handle_input_plugged_in(self, button_state):
-        self.log.info(f'PiPower input plugged in: {button_state}')
-        self.event.publish('pipower5_input_plugged_in', button_state)
-
-    @log_error
-    def handle_input_unplugged(self, button_state):
-        self.log.info(f'PiPower input unplugged: {button_state}')
-        self.event.publish('pipower5_input_unplugged', button_state)
-
-    @log_error
-    def handle_data_changed(self, data, delete_keys: list = []):
-        self.event.publish('data_changed', data, delete_keys=delete_keys)
+        seq = self._config.get('pipower5_buzz_sequence', {}).get(event, [])
+        if seq:
+            self.pipower5.buzz_sequence(seq)
 
     @log_error
     def update_config(self, config, init=False):
-        '''
-        Update config.
-
-        Args:
-            config (Dict): New config dict.
-
-        Returns:
-            A dict of config patch to update the config file.
-        '''
         patch = {}
-        if not init:
-            patch = self.service.update_config(config, init)
+        cfg = config
+
+        if 'shutdown_percentage' in cfg:
+            val = cfg['shutdown_percentage']
+            if not init:
+                self.pipower5.write_shutdown_percentage(val)
+            patch['shutdown_percentage'] = val
+
+        if 'pipower5_buzzer_volume' in cfg:
+            val = cfg['pipower5_buzzer_volume']
+            if not init:
+                self.pipower5.set_buzzer_volume(val)
+            patch['pipower5_buzzer_volume'] = val
+
+        for key in ('send_email_on', 'send_email_to', 'smtp_server',
+                     'smtp_port', 'smtp_email', 'smtp_password', 'smtp_security',
+                     'pipower5_buzz_on', 'pipower5_buzz_sequence'):
+            if key in cfg:
+                patch[key] = cfg[key]
+
+        if init:
+            self._config = {**cfg, **patch}
+        else:
+            self._config = {**self._config, **patch}
         return patch
 
     @log_error
+    def publish_data(self):
+        data = self.pipower5.read_all()
+        data['device_name'] = self.device_info['name']
+        self.event.publish('data_changed', data)
+
+    @log_error
+    def _check_events(self):
+        try:
+            shutdown_req = self.pipower5.read_shutdown_request()
+            button_state = self.pipower5.read_power_btn()
+            is_plugged = self.pipower5.read_is_input_plugged_in()
+
+            if shutdown_req != self._last_shutdown_request:
+                self._last_shutdown_request = shutdown_req
+                if shutdown_req == 1:
+                    self.event.publish('pipower5_low_battery_shutdown', shutdown_req)
+                elif shutdown_req == 2:
+                    self.event.publish('pipower5_button_shutdown', shutdown_req)
+
+            if button_state != self._last_button_state:
+                self._last_button_state = button_state
+                if button_state == 1:
+                    self.event.publish('pipower5_button_click', button_state)
+                elif button_state == 2:
+                    self.event.publish('pipower5_button_double_click', button_state)
+                elif button_state == 3:
+                    self.event.publish('pipower5_button_long_press', button_state)
+                elif button_state == 4:
+                    self.event.publish('pipower5_button_long_press_released', button_state)
+
+            if is_plugged != self._was_input_plugged_in:
+                self._was_input_plugged_in = is_plugged
+                if is_plugged:
+                    self.event.publish('pipower5_input_plugged_in', is_plugged)
+                else:
+                    self.event.publish('pipower5_input_unplugged', is_plugged)
+
+        except Exception as e:
+            self.log.debug(f'Event check failed: {e}')
+
+    @log_error
     async def _main(self):
-        # service.main() runs in its own thread via _start()
+        self.log.info('PiPower5 addon main loop started')
         while self.running:
-            await asyncio.sleep(1)
+            try:
+                self.publish_data()
+                self._check_events()
+            except Exception as e:
+                self.log.error(f'PiPower5 main loop error: {e}')
+            await asyncio.sleep(self.LOOP_INTERVAL)
 
     @log_error
     async def _start(self):
-        self.service.start()
+        self.pipower5.write_shutdown_percentage(
+            self._config.get('shutdown_percentage', 10))
+        self.pipower5.set_buzzer_volume(
+            self._config.get('pipower5_buzzer_volume', 5))
 
     @log_error
     async def _stop(self):
-        self.service.stop()
+        pass
