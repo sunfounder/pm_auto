@@ -43,6 +43,10 @@ class PiPower5Addon(Addon):
         return self.service.test_smtp()
 
     @log_error
+    def play_pipower5_buzzer(self, event):
+        self.service.buzz_event(event)
+
+    @log_error
     def handle_button_click(self, button_state):
         self.log.info(f'PiPower button click: {button_state}')
         self.event.publish('pipower5_button_click', button_state)
@@ -126,7 +130,9 @@ class PiPower5Addon(Addon):
 
     @log_error
     async def _main(self):
-        await self.service.main()
+        # service.main() runs in its own thread via _start()
+        while self.running:
+            await asyncio.sleep(1)
 
     @log_error
     async def _start(self):

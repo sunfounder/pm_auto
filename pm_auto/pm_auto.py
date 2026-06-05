@@ -71,6 +71,10 @@ class PMAuto:
         return self.addons.pipower5.test_smtp()
 
     @log_error
+    def play_pipower5_buzzer(self, event):
+        return self.addons.pipower5.play_pipower5_buzzer(event)
+
+    @log_error
     def handle_data_changed(self, data: Dict, delete_keys: list = []) -> None:
         # Delete old data
         for key in delete_keys:
