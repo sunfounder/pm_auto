@@ -107,10 +107,27 @@ class SunFounderRGBLED():
         self._write_rgb_block()
 
     def _write_rgb_block(self):
-        """Write R, G, B, brightness, speed in a single I2C transaction starting at RED (0x10).
+        """Write R, G, B, brightness, speed with retry for I2C bus contention.
 
-        Matches the firmware's recommended burst-write pattern. Avoids hitting the
-        MCU's __disable_irq() critical section with multiple separate writes.
+        The CH32V003 firmware disables IRQs during WS2812 DMA transfers (~750us),
+        causing I2C writes to fail with EREMOTEIO if they land in this window.
+        Retry up to 3 times with jittered delays to find a non-contended window.
         """
-        data = self.color + [self.brightness, self.speed]
-        self.i2c.write_i2c_block_data(self.Register.RED.value, data)
+        import time
+        import random
+        for attempt in range(3):
+            try:
+                self.i2c.write_byte_data(self.Register.RED.value, self.color[0])
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.GREEN.value, self.color[1])
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.BLUE.value, self.color[2])
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.BRIGHTNESS.value, self.brightness)
+                time.sleep(0.005)
+                self.i2c.write_byte_data(self.Register.SPEED.value, self.speed)
+                return
+            except OSError:
+                if attempt < 2:
+                    time.sleep(0.01 + random.uniform(0, 0.005))
+        raise

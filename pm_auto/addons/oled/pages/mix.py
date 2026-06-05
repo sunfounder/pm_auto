@@ -15,6 +15,8 @@ ram_icon = get_icon('icon_ram_24.png')
 error_icon = get_icon('icon_error_20.png')
 
 class PageMix(OLEDPage):
+    needs_ip = True
+
     def __init__(self):
         super().__init__()
         self.ip_index = 0

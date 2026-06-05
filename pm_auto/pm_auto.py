@@ -88,6 +88,10 @@ class PMAuto:
         return self.data
 
     @log_error
+    def get_ip_data(self):
+        return self.addons.system.fetch_ip_data()
+
+    @log_error
     def is_ready(self) -> bool:
         return self._is_ready
 
