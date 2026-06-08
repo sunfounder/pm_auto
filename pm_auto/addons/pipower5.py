@@ -18,11 +18,12 @@ class PiPower5Addon(Addon):
         super().__init__(*args, **kwargs)
 
         from pipower5.pipower5 import PiPower5
-        self.pipower5 = PiPower5()
-        if not self.pipower5.is_ready():
+        from pipower5.device import is_connected
+        if not is_connected():
             self.log.error('PiPower5 not ready')
             self._is_ready = False
             return
+        self.pipower5 = PiPower5()
 
         self.update_config(config, init=True)
 
@@ -57,6 +58,8 @@ class PiPower5Addon(Addon):
     @log_error
     def update_config(self, config, init=False):
         patch = {}
+        if config is None:
+            config = {}
         cfg = config
 
         if 'shutdown_percentage' in cfg:
