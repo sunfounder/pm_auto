@@ -127,23 +127,32 @@ class PiPower5Addon(Addon):
         except Exception as e:
             self.log.debug(f'Event check failed: {e}')
 
-    @log_error
     async def _main(self):
         self.log.info('PiPower5 addon main loop started')
         while self.running:
             try:
                 self.publish_data()
+            except Exception as e:
+                self.log.error(f'PiPower5 publish error: {e}')
+            try:
                 self._check_events()
             except Exception as e:
-                self.log.error(f'PiPower5 main loop error: {e}')
+                pass
             await asyncio.sleep(self.LOOP_INTERVAL)
 
     @log_error
     async def _start(self):
-        self.pipower5.write_shutdown_percentage(
-            self._config.get('shutdown_percentage', 10))
-        self.pipower5.set_buzzer_volume(
-            self._config.get('pipower5_buzzer_volume', 5))
+        cfg = getattr(self, '_config', {})
+        try:
+            self.pipower5.write_shutdown_percentage(
+                cfg.get('shutdown_percentage', 10))
+        except Exception as e:
+            self.log.warning(f'write_shutdown_percentage failed: {e}')
+        try:
+            self.pipower5.set_buzzer_volume(
+                cfg.get('pipower5_buzzer_volume', 5))
+        except Exception as e:
+            self.log.warning(f'set_buzzer_volume failed: {e}')
 
     @log_error
     async def _stop(self):
