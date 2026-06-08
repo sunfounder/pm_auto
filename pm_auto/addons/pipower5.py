@@ -142,17 +142,7 @@ class PiPower5Addon(Addon):
 
     @log_error
     async def _start(self):
-        cfg = getattr(self, '_config', {})
-        try:
-            self.pipower5.write_shutdown_percentage(
-                cfg.get('shutdown_percentage', 10))
-        except Exception as e:
-            self.log.warning(f'write_shutdown_percentage failed: {e}')
-        try:
-            self.pipower5.set_buzzer_volume(
-                cfg.get('pipower5_buzzer_volume', 5))
-        except Exception as e:
-            self.log.warning(f'set_buzzer_volume failed: {e}')
+        pass
 
     @log_error
     async def _stop(self):
