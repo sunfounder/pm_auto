@@ -92,6 +92,11 @@ class PiPower5Addon(Addon):
         data['device_name'] = self.device_info['name']
         self.event.publish('data_changed', data)
 
+    def _buzz_if_enabled(self, event_name):
+        buzz_on = self._config.get('pipower5_buzz_on', [])
+        if event_name in buzz_on:
+            self.play_pipower5_buzzer(event_name)
+
     @log_error
     def _check_events(self):
         try:
@@ -103,8 +108,10 @@ class PiPower5Addon(Addon):
                 self._last_shutdown_request = shutdown_req
                 if shutdown_req == 1:
                     self.event.publish('pipower5_low_battery_shutdown', shutdown_req)
+                    self._buzz_if_enabled('low_battery')
                 elif shutdown_req == 2:
                     self.event.publish('pipower5_button_shutdown', shutdown_req)
+                    self._buzz_if_enabled('battery_critical_shutdown')
 
             if button_state != self._last_button_state:
                 self._last_button_state = button_state
@@ -121,8 +128,10 @@ class PiPower5Addon(Addon):
                 self._was_input_plugged_in = is_plugged
                 if is_plugged:
                     self.event.publish('pipower5_input_plugged_in', is_plugged)
+                    self._buzz_if_enabled('power_restored')
                 else:
                     self.event.publish('pipower5_input_unplugged', is_plugged)
+                    self._buzz_if_enabled('power_disconnected')
 
         except Exception as e:
             self.log.debug(f'Event check failed: {e}')
