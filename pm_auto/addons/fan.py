@@ -21,21 +21,26 @@ FAN_LEVELS = [
     {
         "name": "OFF",
         "low": -200,
-        "high": 55,
+        "high": 50,
         "percent": 0,
     }, {
         "name": "LOW",
         "low": 45,
-        "high": 65,
-        "percent": 40,
+        "high": 60,
+        "percent": 30,
     }, {
         "name": "MEDIUM",
         "low": 55,
-        "high": 75,
-        "percent": 80,
+        "high": 67.5,
+        "percent": 50,
     }, {
         "name": "HIGH",
-        "low": 65,
+        "low": 62.5,
+        "high": 75,
+        "percent": 70,
+    }, {
+        "name": "FULL",
+        "low": 70,
         "high": 100,
         "percent": 100,
     },
@@ -408,7 +413,7 @@ class PWMFan(Fan):
     # Systems that need to replace system pwm fan control
     # Please use all lowercase
     TEMP_CONTROL_INTERVENE_OS = [
-        
+        'ubuntu',
     ]
 
     @log_error
