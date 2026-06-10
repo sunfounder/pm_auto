@@ -164,6 +164,7 @@ class OLEDAddon(Addon):
     @log_error
     def wake_page_next(self, *args, **kwargs):
         self.log.debug(f'OLED wake or next page')
+        self.wake()
         self.is_wake_page_next = True
 
     @log_error
