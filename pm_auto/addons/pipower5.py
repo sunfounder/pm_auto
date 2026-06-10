@@ -117,6 +117,7 @@ class PiPower5Addon(Addon):
                     self._buzz_if_enabled('battery_critical_shutdown')
 
             if button_state != self._last_button_state:
+                self.log.info(f'Button state changed: {self._last_button_state} -> {button_state}')
                 self._last_button_state = button_state
                 if button_state == 1:
                     self.event.publish('pipower5_button_click', button_state)
