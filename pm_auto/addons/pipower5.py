@@ -46,9 +46,11 @@ class PiPower5Addon(Addon):
 
     @log_error
     def test_smtp(self):
-        if self.email_sender:
+        if not self.email_sender:
+            return False, "Email sender not initialized"
+        if hasattr(self.email_sender, 'test_smtp'):
             return self.email_sender.test_smtp()
-        return False
+        return self.email_sender.is_ready(), "" if self.email_sender.is_ready() else "Email sender not ready"
 
     @log_error
     def play_pipower5_buzzer(self, event):
