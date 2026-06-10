@@ -117,7 +117,6 @@ class PiPower5Addon(Addon):
                     self._buzz_if_enabled('battery_critical_shutdown')
 
             if button_state != self._last_button_state:
-                self.log.info(f'Button state changed: {self._last_button_state} -> {button_state}')
                 self._last_button_state = button_state
                 if button_state == 1:
                     self.event.publish('pipower5_button_click', button_state)
@@ -138,22 +137,18 @@ class PiPower5Addon(Addon):
                     self._buzz_if_enabled('power_disconnected')
 
         except Exception as e:
-            self.log.warning(f'Event check failed: {e}')
+            self.log.debug(f'Event check failed: {e}')
 
     async def _main(self):
         self.log.info('PiPower5 addon main loop started')
         import time as _time
         last_data = 0
-        last_heartbeat = 0
         while self.running:
-            if _time.monotonic() - last_heartbeat >= 10:
-                self.log.info('PiPower5 heartbeat OK')
-                last_heartbeat = _time.monotonic()
             now = _time.monotonic()
             try:
                 self._check_events()
             except Exception as e:
-                self.log.error(f'PiPower5 _check_events error: {e}', exc_info=True)
+                pass
             if now - last_data >= self.LOOP_INTERVAL:
                 try:
                     self.publish_data()
