@@ -32,9 +32,6 @@ class SunFounderRGBLEDAddon(Addon):
             else:
                 if _count < 1:
                     _count = 1
-                elif _count > MAX_LEDS:
-                    self.log.warning(f"rgb_led_count {_count} exceeds hardware max {MAX_LEDS}, clamped")
-                    _count = MAX_LEDS
                 if not init:
                     self.rgb.set_num(_count)
                 self.count = _count

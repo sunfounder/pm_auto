@@ -71,8 +71,6 @@ class SunFounderRGBLED():
             self.set_mode(style)
 
     def set_num(self, num: int):
-        if num > MAX_LEDS:
-            num = MAX_LEDS
         if num < 0:
             num = 0
         self.led_count = num

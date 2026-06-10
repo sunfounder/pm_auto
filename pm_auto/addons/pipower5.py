@@ -4,6 +4,7 @@ import asyncio
 
 class PiPower5Addon(Addon):
     LOOP_INTERVAL = 1
+    BUTTON_POLL_INTERVAL = 0.1
 
     DEFAULT_CONFIG = {
         'shutdown_percentage': 10,
@@ -138,16 +139,21 @@ class PiPower5Addon(Addon):
 
     async def _main(self):
         self.log.info('PiPower5 addon main loop started')
+        import time as _time
+        last_data = 0
         while self.running:
-            try:
-                self.publish_data()
-            except Exception as e:
-                self.log.error(f'PiPower5 publish error: {e}')
+            now = _time.monotonic()
             try:
                 self._check_events()
             except Exception as e:
                 pass
-            await asyncio.sleep(self.LOOP_INTERVAL)
+            if now - last_data >= self.LOOP_INTERVAL:
+                try:
+                    self.publish_data()
+                except Exception as e:
+                    self.log.error(f'PiPower5 publish error: {e}')
+                last_data = now
+            await asyncio.sleep(self.BUTTON_POLL_INTERVAL)
 
     @log_error
     async def _start(self):
