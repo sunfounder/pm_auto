@@ -48,9 +48,8 @@ class PiPower5Addon(Addon):
     def test_smtp(self):
         if not self.email_sender:
             return False, "Email sender not initialized"
-        ready, msg = self.email_sender.is_ready()
-        if not ready:
-            return False, msg
+        if not self.email_sender.is_ready():
+            return False, "SMTP settings incomplete"
         try:
             self.email_sender.connect()
             return True, ""
