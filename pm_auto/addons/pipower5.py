@@ -58,9 +58,7 @@ class PiPower5Addon(Addon):
 
     @log_error
     def play_pipower5_buzzer(self, event):
-        seq = self._config.get('pipower5_buzz_sequence', {}).get(event, [])
-        if seq:
-            self.pipower5.buzz_sequence(seq)
+        self.pipower5.buzz_sequence(event)
 
     @log_error
     def update_config(self, config, init=False):
