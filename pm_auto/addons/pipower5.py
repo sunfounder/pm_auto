@@ -81,6 +81,10 @@ class PiPower5Addon(Addon):
                 self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
 
+        smtp_changed = any(k in cfg for k in (
+            'smtp_server', 'smtp_port', 'smtp_email',
+            'smtp_password', 'smtp_security'))
+
         for key in ('send_email_on', 'send_email_to', 'smtp_server',
                      'smtp_port', 'smtp_email', 'smtp_password', 'smtp_security',
                      'pipower5_buzz_on', 'pipower5_buzz_sequence'):
@@ -91,6 +95,13 @@ class PiPower5Addon(Addon):
             self._config = {**cfg, **patch}
         else:
             self._config = {**self._config, **patch}
+
+        if smtp_changed and not init:
+            try:
+                from pipower5.email_sender import EmailSender
+                self.email_sender = EmailSender(self._config, log=self.log)
+            except Exception as e:
+                self.log.warning(f'Failed to recreate EmailSender: {e}')
         return patch
 
     @log_error
