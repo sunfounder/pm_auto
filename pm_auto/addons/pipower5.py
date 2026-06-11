@@ -18,13 +18,24 @@ class PiPower5Addon(Addon):
     def __init__(self, *args, config=None, log=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        from pipower5.pipower5 import PiPower5
-        from pipower5.device import is_connected
-        if not is_connected():
-            self.log.error('PiPower5 not ready')
+        try:
+            from pipower5.pipower5 import PiPower5
+            from pipower5.device import is_connected
+        except ImportError as e:
+            self.log.error(f'PiPower5 package not installed: {e}')
             self._is_ready = False
             return
-        self.pipower5 = PiPower5()
+
+        try:
+            if not is_connected():
+                self.log.error('PiPower5 not ready')
+                self._is_ready = False
+                return
+            self.pipower5 = PiPower5()
+        except Exception as e:
+            self.log.error(f'PiPower5 init failed: {e}')
+            self._is_ready = False
+            return
 
         self.update_config(config, init=True)
 
