@@ -46,6 +46,17 @@ Both share the same config keys: `rgb_led_count`, `rgb_enable`, `rgb_color`, `rg
 
 The I2C driver targets the CH32V003 firmware at `pironman5-ups-rgb-firmware`. Protocol: first byte = register address, subsequent bytes auto-increment through `registerMap[255]`. Hardware limit: 23 LEDs (`WS2812_MAX_LEDS`).
 
+## Pull Request Rules
+
+- **PR target is always `v2`**, never `main`. `main` is deprecated and scheduled for deletion.
+- **Never commit directly to `v2`**. Always create a feature/fix branch:
+  - `fix/<description>` for bug fixes
+  - `feat/<description>` for new features
+  - `chore/<description>` for version bumps, config, etc.
+- Branch off from latest `v2`: `git checkout v2 && git pull && git checkout -b <branch-name>`
+- **Push all commits before merging.** Wait for `git push` to complete, then merge via GitHub UI.
+- After merge, delete the feature branch remotely.
+
 ## Version & Branching
 
 Follow the **multi-version mode** branching spec:
