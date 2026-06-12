@@ -36,10 +36,15 @@ class PiPower5Addon(Addon):
             self._is_ready = False
             return
 
+        # Feature detection: native-driver (sysfs) vs main branch (I2C/SPC)
+        self._has_buzzer_vol = hasattr(self.pipower5, 'read_buzzer_volume')
+        self._has_buzz_on    = hasattr(self.pipower5, 'set_buzz_on')
+        self._has_pft_driver = hasattr(self.pipower5, 'read_estimated_runtime')
+
         self.update_config(config, init=True)
 
-        # Sync buzz_on config to kernel driver bitmask
-        self._apply_buzz_on()
+        if self._has_buzz_on:
+            self._apply_buzz_on()
 
         self._last_button_state = None
         self._last_shutdown_request = None
@@ -72,7 +77,18 @@ class PiPower5Addon(Addon):
 
     @log_error
     def test_smtp(self):
-        return self.pipower5.test_smtp(self._config)
+        if hasattr(self.pipower5, 'test_smtp'):
+            return self.pipower5.test_smtp(self._config)
+        # Fallback for main branch (no test_smtp on PiPower5)
+        try:
+            from pipower5.email_sender import EmailSender
+            sender = EmailSender(self._config)
+            if not sender.is_ready():
+                return False, "SMTP settings incomplete"
+            sender.connect()
+            return True, ""
+        except Exception as e:
+            return False, str(e)
 
     def _apply_buzz_on(self):
         """Sync pipower5_buzz_on config list to kernel driver bitmask."""
@@ -103,7 +119,8 @@ class PiPower5Addon(Addon):
 
         if 'pipower5_buzzer_volume' in cfg:
             val = cfg['pipower5_buzzer_volume']
-            self.pipower5.set_buzzer_volume(val)
+            if self._has_buzzer_vol:
+                self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
 
         for key in ('send_email_on', 'send_email_to', 'smtp_server',
@@ -117,7 +134,7 @@ class PiPower5Addon(Addon):
         else:
             self._config = {**self._config, **patch}
 
-        if 'pipower5_buzz_on' in cfg and not init:
+        if 'pipower5_buzz_on' in cfg and not init and self._has_buzz_on:
             self._apply_buzz_on()
 
         return patch
