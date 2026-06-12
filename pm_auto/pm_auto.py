@@ -75,6 +75,10 @@ class PMAuto:
         return self.addons.pipower5.play_pipower5_buzzer(event)
 
     @log_error
+    def power_failure_simulation(self, test_time=60):
+        return self.addons.pipower5.power_failure_simulation(test_time)
+
+    @log_error
     def handle_data_changed(self, data: Dict, delete_keys: list = []) -> None:
         # Delete old data
         for key in delete_keys:

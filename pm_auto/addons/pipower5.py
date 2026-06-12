@@ -70,7 +70,7 @@ class PiPower5Addon(Addon):
                 self._config['shutdown_percentage'] = hw_shutdown
                 self.event.publish('config_changed', {'shutdown_percentage': hw_shutdown})
 
-            hw_buzzer_vol = self.pipower5.read_buzzer_volume()
+            hw_buzzer_vol = self.pipower5.read_buzzer_volume() // 10  # kernel 0-100 → config 0-10
             cfg_buzzer_vol = self._config.get('pipower5_buzzer_volume')
             if cfg_buzzer_vol is not None and hw_buzzer_vol != cfg_buzzer_vol:
                 self._config['pipower5_buzzer_volume'] = hw_buzzer_vol
@@ -95,6 +95,10 @@ class PiPower5Addon(Addon):
         self.pipower5.buzz_sequence(event)
 
     @log_error
+    def power_failure_simulation(self, test_time=60):
+        return self.pipower5.power_failure_simulation(test_time)
+
+    @log_error
     def update_config(self, config, init=False):
         patch = {}
         if config is None:
@@ -110,7 +114,8 @@ class PiPower5Addon(Addon):
         if 'pipower5_buzzer_volume' in cfg:
             val = cfg['pipower5_buzzer_volume']
             if not init:
-                self.pipower5.set_buzzer_volume(val)
+                # Config uses 0-10 scale, kernel expects 0-100
+                self.pipower5.set_buzzer_volume(val * 10)
             patch['pipower5_buzzer_volume'] = val
 
         smtp_changed = any(k in cfg for k in (
