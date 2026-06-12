@@ -11,7 +11,6 @@ class PiPower5Addon(Addon):
         'pipower5_buzzer_volume': 5,
         'pipower5_buzz_on': [],
         'pipower5_buzz_sequence': {},
-        'send_email_on': [],
     }
 
     @log_error
@@ -39,12 +38,7 @@ class PiPower5Addon(Addon):
 
         self.update_config(config, init=True)
 
-        try:
-            from pipower5.email_sender import EmailSender
-            self.email_sender = EmailSender(config, log=self.log)
-        except Exception as e:
-            self.log.warning(f'Email sender init failed: {e}')
-            self.email_sender = None
+        self._apply_buzz_on()
 
         self._last_button_state = None
         self._last_shutdown_request = None
@@ -56,20 +50,43 @@ class PiPower5Addon(Addon):
         return self._is_ready
 
     @log_error
-    def test_smtp(self):
-        if not self.email_sender:
-            return False, "Email sender not initialized"
-        if not self.email_sender.is_ready():
-            return False, "SMTP settings incomplete"
+    def _sync_hardware_to_config(self):
+        """Read current hardware values and publish any differences as config patches.
+        This handles the case where CLI (pipower5) changed values directly in hardware."""
         try:
-            self.email_sender.connect()
-            return True, ""
+            hw_shutdown = self.pipower5.read_shutdown_percentage()
+            cfg_shutdown = self._config.get('shutdown_percentage')
+            if cfg_shutdown is not None and hw_shutdown != cfg_shutdown:
+                self.log.info(f'Hardware shutdown_pct ({hw_shutdown}) differs from config ({cfg_shutdown}), syncing')
+                self._config['shutdown_percentage'] = hw_shutdown
+                self.event.publish('config_changed', {'shutdown_percentage': hw_shutdown})
+
+            hw_buzzer_vol = self.pipower5.read_buzzer_volume()
+            cfg_buzzer_vol = self._config.get('pipower5_buzzer_volume')
+            if cfg_buzzer_vol is not None and hw_buzzer_vol != cfg_buzzer_vol:
+                self._config['pipower5_buzzer_volume'] = hw_buzzer_vol
+                self.event.publish('config_changed', {'pipower5_buzzer_volume': hw_buzzer_vol})
         except Exception as e:
-            return False, str(e)
+            self.log.debug(f'Hardware→config sync skipped: {e}')
 
     @log_error
+    def test_smtp(self):
+        return self.pipower5.test_smtp(self._config)
+
+    def _apply_buzz_on(self):
+        """Sync pipower5_buzz_on config list to kernel driver bitmask."""
+        try:
+            events = self._config.get("pipower5_buzz_on", [])
+            self.pipower5.set_buzz_on(events)
+        except Exception as e:
+            self.log.debug(f"Failed to apply buzz_on: {e}")
+
     def play_pipower5_buzzer(self, event):
         self.pipower5.buzz_sequence(event)
+
+    @log_error
+    def power_failure_simulation(self, test_time=60):
+        return self.pipower5.power_failure_simulation(test_time)
 
     @log_error
     def update_config(self, config, init=False):
@@ -80,19 +97,13 @@ class PiPower5Addon(Addon):
 
         if 'shutdown_percentage' in cfg:
             val = cfg['shutdown_percentage']
-            if not init:
-                self.pipower5.write_shutdown_percentage(val)
+            self.pipower5.write_shutdown_percentage(val)
             patch['shutdown_percentage'] = val
 
         if 'pipower5_buzzer_volume' in cfg:
             val = cfg['pipower5_buzzer_volume']
-            if not init:
-                self.pipower5.set_buzzer_volume(val)
+            self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
-
-        smtp_changed = any(k in cfg for k in (
-            'smtp_server', 'smtp_port', 'smtp_email',
-            'smtp_password', 'smtp_security'))
 
         for key in ('send_email_on', 'send_email_to', 'smtp_server',
                      'smtp_port', 'smtp_email', 'smtp_password', 'smtp_security',
@@ -105,12 +116,9 @@ class PiPower5Addon(Addon):
         else:
             self._config = {**self._config, **patch}
 
-        if smtp_changed and not init:
-            try:
-                from pipower5.email_sender import EmailSender
-                self.email_sender = EmailSender(self._config, log=self.log)
-            except Exception as e:
-                self.log.warning(f'Failed to recreate EmailSender: {e}')
+        if 'pipower5_buzz_on' in cfg and not init:
+            self._apply_buzz_on()
+
         return patch
 
     @log_error
@@ -119,13 +127,10 @@ class PiPower5Addon(Addon):
         data['device_name'] = self.device_info['name']
         self.event.publish('data_changed', data)
 
-    def _buzz_if_enabled(self, event_name):
-        buzz_on = self._config.get('pipower5_buzz_on', [])
-        if event_name in buzz_on:
-            self.play_pipower5_buzzer(event_name)
-
     @log_error
     def _check_events(self):
+        """Lightweight event bridge: read driver state, publish pm_auto events.
+        Buzzer and email are handled by kernel driver + udev, not here."""
         try:
             shutdown_req = self.pipower5.read_shutdown_request()
             button_state = self.pipower5.read_power_btn()
@@ -135,10 +140,10 @@ class PiPower5Addon(Addon):
                 self._last_shutdown_request = shutdown_req
                 if shutdown_req == 1:
                     self.event.publish('pipower5_low_battery_shutdown', shutdown_req)
-                    self._buzz_if_enabled('low_battery')
                 elif shutdown_req == 2:
                     self.event.publish('pipower5_button_shutdown', shutdown_req)
-                    self._buzz_if_enabled('battery_critical_shutdown')
+                elif shutdown_req == 3:
+                    self.event.publish('pipower5_low_voltage_shutdown', shutdown_req)
 
             if button_state != self._last_button_state:
                 self._last_button_state = button_state
@@ -155,10 +160,8 @@ class PiPower5Addon(Addon):
                 self._was_input_plugged_in = is_plugged
                 if is_plugged:
                     self.event.publish('pipower5_input_plugged_in', is_plugged)
-                    self._buzz_if_enabled('power_restored')
                 else:
                     self.event.publish('pipower5_input_unplugged', is_plugged)
-                    self._buzz_if_enabled('power_disconnected')
 
         except Exception as e:
             self.log.debug(f'Event check failed: {e}')

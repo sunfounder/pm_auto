@@ -51,6 +51,7 @@ class OLEDAddon(Addon):
         self.wake_flag = True
         self.wake_start_time = 0
         self.is_power_off = False
+        self._power_off_start = 0
         self.is_wake_page_next = False
         self.is_page_prev = False
         self.data = {}
@@ -59,6 +60,7 @@ class OLEDAddon(Addon):
         self.event.subscribe("oled_page_prev", self.page_prev)
         self.event.subscribe("shutdown", self.show_shutdown_screen)
         self.event.subscribe("oled_show_shutdown_screen", self.show_shutdown_screen)
+        self.event.subscribe("oled_clear_screen", self.clear_screen)
         self.event.subscribe("data_changed", self.handle_data_changed)
         self.event.subscribe('ip_data', self.handle_ip_data)
 
@@ -155,6 +157,15 @@ class OLEDAddon(Addon):
     def show_shutdown_screen(self, reason):
         self.log.info(f"Show shutdown screen, reason: {reason}")
         self.is_power_off = True
+        self._power_off_start = time.time()
+
+    @log_error
+    def clear_screen(self, *args, **kwargs):
+        """Clear OLED screen immediately — called before forced power-off."""
+        self.log.debug('OLED clear screen (pre-shutdown)')
+        self.oled.clear()
+        self.oled.display()
+        self.wake_flag = False
 
     @log_error
     def wake(self):
@@ -164,7 +175,8 @@ class OLEDAddon(Addon):
     @log_error
     def wake_page_next(self, *args, **kwargs):
         self.log.debug(f'OLED wake or next page')
-        self.wake()
+        # Don't call self.wake() here — let _main() decide whether to
+        # just wake (if sleeping) or flip page (if already awake).
         self.is_wake_page_next = True
 
     @log_error
@@ -208,9 +220,14 @@ class OLEDAddon(Addon):
                 continue
             
             if self.is_power_off == True:
-                self.log.debug("OLED show power off page")
-                power_off_page.main(self.oled)
-                await asyncio.sleep(1)
+                # Show POWER OFF for 2s, then clear display so next boot
+                # doesn't show a misleading "POWER OFF" from stale RAM.
+                if time.time() - self._power_off_start < 2:
+                    self.log.debug("OLED show power off page")
+                    power_off_page.main(self.oled)
+                else:
+                    self.clear_screen()
+                await asyncio.sleep(0.1)
                 continue
 
             if len(self.pages) < 1:
