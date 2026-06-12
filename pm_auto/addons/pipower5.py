@@ -14,16 +14,6 @@ class PiPower5Addon(Addon):
         'send_email_on': [],
     }
 
-    BUZZ_EVENT_BIT = {
-        "battery_activated":                 0x01,
-        "low_battery":                       0x02,
-        "power_disconnected":                0x04,
-        "power_restored":                    0x08,
-        "power_insufficient":                0x10,
-        "battery_critical_shutdown":         0x20,
-        "battery_voltage_critical_shutdown": 0x40,
-    }
-
     @log_error
     def __init__(self, *args, config=None, log=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -101,15 +91,13 @@ class PiPower5Addon(Addon):
             return False, str(e)
 
     def _apply_buzz_on(self):
-        """Write pipower5_buzz_on config (list of event names) to kernel sysfs as bitmask."""
+        """Disable kernel-triggered buzzer — Python addon handles all filtering
+        via _buzz_if_enabled per pipower5_buzz_on config list.
+        The kernel buzz_on is a global on/off, not per-event. We disable it."""
         try:
-            buzz_on = self._config.get("pipower5_buzz_on", [])
-            mask = 0
-            for event in buzz_on:
-                mask |= self.BUZZ_EVENT_BIT.get(event, 0)
-            self.pipower5._write_sysfs("buzz_on", f"0x{mask:02X}")
+            self.pipower5._write_sysfs("buzz_on", "0x00")
         except Exception as e:
-            self.log.debug(f"Failed to apply buzz_on to driver: {e}")
+            self.log.debug(f"Failed to disable kernel buzz_on: {e}")
 
     def play_pipower5_buzzer(self, event):
         self.pipower5.buzz_sequence(event)
@@ -156,9 +144,6 @@ class PiPower5Addon(Addon):
                 self.email_sender = EmailSender(self._config, log=self.log)
             except Exception as e:
                 self.log.warning(f'Failed to recreate EmailSender: {e}')
-
-        if 'pipower5_buzz_on' in cfg and not init:
-            self._apply_buzz_on()
 
         return patch
 
