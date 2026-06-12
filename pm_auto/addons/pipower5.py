@@ -8,10 +8,20 @@ class PiPower5Addon(Addon):
 
     DEFAULT_CONFIG = {
         'shutdown_percentage': 10,
-        'pipower5_buzzer_volume': 5,
+        'pipower5_buzzer_volume': 50,
         'pipower5_buzz_on': [],
         'pipower5_buzz_sequence': {},
         'send_email_on': [],
+    }
+
+    BUZZ_EVENT_BIT = {
+        "battery_activated":                 0x01,
+        "low_battery":                       0x02,
+        "power_disconnected":                0x04,
+        "power_restored":                    0x08,
+        "power_insufficient":                0x10,
+        "battery_critical_shutdown":         0x20,
+        "battery_voltage_critical_shutdown": 0x40,
     }
 
     @log_error
@@ -38,6 +48,9 @@ class PiPower5Addon(Addon):
             return
 
         self.update_config(config, init=True)
+
+        # Write non-I2C settings to driver on startup
+        self._apply_buzz_on()
 
         try:
             from pipower5.email_sender import EmailSender
@@ -70,7 +83,7 @@ class PiPower5Addon(Addon):
                 self._config['shutdown_percentage'] = hw_shutdown
                 self.event.publish('config_changed', {'shutdown_percentage': hw_shutdown})
 
-            hw_buzzer_vol = self.pipower5.read_buzzer_volume() // 10  # kernel 0-100 → config 0-10
+            hw_buzzer_vol = self.pipower5.read_buzzer_volume()
             cfg_buzzer_vol = self._config.get('pipower5_buzzer_volume')
             if cfg_buzzer_vol is not None and hw_buzzer_vol != cfg_buzzer_vol:
                 self._config['pipower5_buzzer_volume'] = hw_buzzer_vol
@@ -90,7 +103,17 @@ class PiPower5Addon(Addon):
         except Exception as e:
             return False, str(e)
 
-    @log_error
+    def _apply_buzz_on(self):
+        """Write pipower5_buzz_on config (list of event names) to kernel sysfs as bitmask."""
+        try:
+            buzz_on = self._config.get("pipower5_buzz_on", [])
+            mask = 0
+            for event in buzz_on:
+                mask |= self.BUZZ_EVENT_BIT.get(event, 0)
+            self.pipower5._write_sysfs("buzz_on", f"0x{mask:02X}")
+        except Exception as e:
+            self.log.debug(f"Failed to apply buzz_on to driver: {e}")
+
     def play_pipower5_buzzer(self, event):
         self.pipower5.buzz_sequence(event)
 
@@ -114,8 +137,7 @@ class PiPower5Addon(Addon):
         if 'pipower5_buzzer_volume' in cfg:
             val = cfg['pipower5_buzzer_volume']
             if not init:
-                # Config uses 0-10 scale, kernel expects 0-100
-                self.pipower5.set_buzzer_volume(val * 10)
+                self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
 
         smtp_changed = any(k in cfg for k in (
@@ -139,6 +161,10 @@ class PiPower5Addon(Addon):
                 self.email_sender = EmailSender(self._config, log=self.log)
             except Exception as e:
                 self.log.warning(f'Failed to recreate EmailSender: {e}')
+
+        if 'pipower5_buzz_on' in cfg and not init:
+            self._apply_buzz_on()
+
         return patch
 
     @log_error
