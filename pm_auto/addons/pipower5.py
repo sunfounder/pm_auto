@@ -72,15 +72,7 @@ class PiPower5Addon(Addon):
 
     @log_error
     def test_smtp(self):
-        try:
-            from pipower5.email_sender import EmailSender
-            sender = EmailSender(self._config, log=self.log)
-            if not sender.is_ready():
-                return False, "SMTP settings incomplete"
-            sender.connect()
-            return True, ""
-        except Exception as e:
-            return False, str(e)
+        return self.pipower5.test_smtp(self._config)
 
     def _apply_buzz_on(self):
         """Sync pipower5_buzz_on config list to kernel driver bitmask."""
