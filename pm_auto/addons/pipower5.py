@@ -8,7 +8,7 @@ class PiPower5Addon(Addon):
 
     DEFAULT_CONFIG = {
         'shutdown_percentage': 10,
-        'pipower5_buzzer_volume': 50,
+        'pipower5_buzzer_volume': 5,
         'pipower5_buzz_on': [],
         'pipower5_buzz_sequence': {},
         'send_email_on': [],
@@ -63,9 +63,6 @@ class PiPower5Addon(Addon):
         self._last_shutdown_request = None
         self._was_input_plugged_in = self.pipower5.read_is_input_plugged_in()
         self._is_ready = True
-
-        # Sync hardware→config: if CLI changed hardware values, reflect them
-        self._sync_hardware_to_config()
 
     @log_error
     def is_ready(self):
@@ -130,14 +127,12 @@ class PiPower5Addon(Addon):
 
         if 'shutdown_percentage' in cfg:
             val = cfg['shutdown_percentage']
-            if not init:
-                self.pipower5.write_shutdown_percentage(val)
+            self.pipower5.write_shutdown_percentage(val)
             patch['shutdown_percentage'] = val
 
         if 'pipower5_buzzer_volume' in cfg:
             val = cfg['pipower5_buzzer_volume']
-            if not init:
-                self.pipower5.set_buzzer_volume(val)
+            self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
 
         smtp_changed = any(k in cfg for k in (
