@@ -11,7 +11,6 @@ class PiPower5Addon(Addon):
         'pipower5_buzzer_volume': 5,
         'pipower5_buzz_on': [],
         'pipower5_buzz_sequence': {},
-        'send_email_on': [],
     }
 
     @log_error
@@ -39,15 +38,8 @@ class PiPower5Addon(Addon):
 
         self.update_config(config, init=True)
 
-        # Write non-I2C settings to driver on startup
+        # Sync buzz_on config to kernel driver bitmask
         self._apply_buzz_on()
-
-        try:
-            from pipower5.email_sender import EmailSender
-            self.email_sender = EmailSender(config, log=self.log)
-        except Exception as e:
-            self.log.warning(f'Email sender init failed: {e}')
-            self.email_sender = None
 
         self._last_button_state = None
         self._last_shutdown_request = None
@@ -80,24 +72,23 @@ class PiPower5Addon(Addon):
 
     @log_error
     def test_smtp(self):
-        if not self.email_sender:
-            return False, "Email sender not initialized"
-        if not self.email_sender.is_ready():
-            return False, "SMTP settings incomplete"
         try:
-            self.email_sender.connect()
+            from pipower5.email_sender import EmailSender
+            sender = EmailSender(self._config, log=self.log)
+            if not sender.is_ready():
+                return False, "SMTP settings incomplete"
+            sender.connect()
             return True, ""
         except Exception as e:
             return False, str(e)
 
     def _apply_buzz_on(self):
-        """Disable kernel-triggered buzzer — Python addon handles all filtering
-        via _buzz_if_enabled per pipower5_buzz_on config list.
-        The kernel buzz_on is a global on/off, not per-event. We disable it."""
+        """Sync pipower5_buzz_on config list to kernel driver bitmask."""
         try:
-            self.pipower5._write_sysfs("buzz_on", "0x00")
+            events = self._config.get("pipower5_buzz_on", [])
+            self.pipower5.set_buzz_on(events)
         except Exception as e:
-            self.log.debug(f"Failed to disable kernel buzz_on: {e}")
+            self.log.debug(f"Failed to apply buzz_on: {e}")
 
     def play_pipower5_buzzer(self, event):
         self.pipower5.buzz_sequence(event)
@@ -123,10 +114,6 @@ class PiPower5Addon(Addon):
             self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
 
-        smtp_changed = any(k in cfg for k in (
-            'smtp_server', 'smtp_port', 'smtp_email',
-            'smtp_password', 'smtp_security'))
-
         for key in ('send_email_on', 'send_email_to', 'smtp_server',
                      'smtp_port', 'smtp_email', 'smtp_password', 'smtp_security',
                      'pipower5_buzz_on', 'pipower5_buzz_sequence'):
@@ -138,12 +125,8 @@ class PiPower5Addon(Addon):
         else:
             self._config = {**self._config, **patch}
 
-        if smtp_changed and not init:
-            try:
-                from pipower5.email_sender import EmailSender
-                self.email_sender = EmailSender(self._config, log=self.log)
-            except Exception as e:
-                self.log.warning(f'Failed to recreate EmailSender: {e}')
+        if 'pipower5_buzz_on' in cfg and not init:
+            self._apply_buzz_on()
 
         return patch
 
@@ -153,63 +136,23 @@ class PiPower5Addon(Addon):
         data['device_name'] = self.device_info['name']
         self.event.publish('data_changed', data)
 
-    def _buzz_if_enabled(self, event_name):
-        buzz_on = self._config.get('pipower5_buzz_on', [])
-        if event_name in buzz_on:
-            self.play_pipower5_buzzer(event_name)
-
-    def _send_email_if_enabled(self, event_name, data=None):
-        """Send email notification if event_name is in send_email_on config."""
-        send_email_on = self._config.get('send_email_on', [])
-        if event_name not in send_email_on:
-            return
-        if not self.email_sender:
-            self.log.warning(f'Cannot send email for {event_name}: EmailSender not initialized')
-            return
-        try:
-            if data is None:
-                data = {}
-            # Ensure all template fields are present
-            data.setdefault('device_name', self.device_info.get('name', 'PiPower5'))
-            data.setdefault('battery_percentage', self.pipower5.read_battery_percentage())
-            data.setdefault('battery_voltage', self.pipower5.read_battery_voltage())
-            data.setdefault('shutdown_percentage', self._config.get('shutdown_percentage', 10))
-            data.setdefault('battery_current_output', self.pipower5.read_battery_current())
-            data.setdefault('estimated_time', 'N/A')
-            data.setdefault('input_status', 'Unknown')
-            data.setdefault('charging_status', 'Unknown')
-            import time
-            data.setdefault('switch_time', time.strftime('%Y-%m-%d %H:%M:%S'))
-
-            result = self.email_sender.send_preset_email(event_name, data)
-            if result is True:
-                self.log.info(f'Email sent for event: {event_name}')
-            else:
-                self.log.error(f'Email failed for {event_name}: {result}')
-        except Exception as e:
-            self.log.error(f'Email exception for {event_name}: {e}')
-
     @log_error
     def _check_events(self):
+        """Lightweight event bridge: read driver state, publish pm_auto events.
+        Buzzer and email are handled by kernel driver + udev, not here."""
         try:
             shutdown_req = self.pipower5.read_shutdown_request()
             button_state = self.pipower5.read_power_btn()
             is_plugged = self.pipower5.read_is_input_plugged_in()
-            bat_pct = self.pipower5.read_battery_percentage()
 
             if shutdown_req != self._last_shutdown_request:
                 self._last_shutdown_request = shutdown_req
                 if shutdown_req == 1:
                     self.event.publish('pipower5_low_battery_shutdown', shutdown_req)
-                    self._buzz_if_enabled('low_battery')
-                    self._send_email_if_enabled('low_battery',
-                        {'battery_percentage': bat_pct, 'device_name': self.device_info.get('name', 'PiPower5')})
                 elif shutdown_req == 2:
                     self.event.publish('pipower5_button_shutdown', shutdown_req)
-                    self._buzz_if_enabled('battery_critical_shutdown')
                 elif shutdown_req == 3:
                     self.event.publish('pipower5_low_voltage_shutdown', shutdown_req)
-                    self._buzz_if_enabled('battery_voltage_critical_shutdown')
 
             if button_state != self._last_button_state:
                 self._last_button_state = button_state
@@ -221,22 +164,13 @@ class PiPower5Addon(Addon):
                     self.event.publish('pipower5_button_long_press', button_state)
                 elif button_state == 4:
                     self.event.publish('pipower5_button_long_press_released', button_state)
-                # States 5 (LONG_PRESS_5S) and 6: MCU cuts power directly,
-                # Python won't reliably see these. OLED is cleared by the
-                # 2-second auto-clear timer in OLEDAddon._main().
 
             if is_plugged != self._was_input_plugged_in:
                 self._was_input_plugged_in = is_plugged
                 if is_plugged:
                     self.event.publish('pipower5_input_plugged_in', is_plugged)
-                    self._buzz_if_enabled('power_restored')
-                    self._send_email_if_enabled('power_restored',
-                        {'battery_percentage': bat_pct, 'device_name': self.device_info.get('name', 'PiPower5')})
                 else:
                     self.event.publish('pipower5_input_unplugged', is_plugged)
-                    self._buzz_if_enabled('power_disconnected')
-                    self._send_email_if_enabled('power_disconnected',
-                        {'battery_percentage': bat_pct, 'device_name': self.device_info.get('name', 'PiPower5')})
 
         except Exception as e:
             self.log.debug(f'Event check failed: {e}')
