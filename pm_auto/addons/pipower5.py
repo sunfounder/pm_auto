@@ -39,8 +39,10 @@ class PiPower5Addon(Addon):
             self._is_ready = False
             return
 
-        # Sync email config from pipower5 CLI config to pironman5 config (init only)
-        self._sync_email_from_cli()
+        # Sync email config from pipower5 CLI to pironman5 config, then merge into defaults
+        cli_email = self._sync_email_from_cli()
+        if cli_email:
+            config = {**(config or {}), **cli_email}
 
         self.update_config(config, init=True)
 
@@ -52,23 +54,22 @@ class PiPower5Addon(Addon):
         self._is_ready = True
 
     def _sync_email_from_cli(self):
-        """On init, copy email settings from pipower5 CLI config to pironman5 config."""
+        """On init, copy email settings from pipower5 CLI config.
+        Returns merged dict for init, and publishes to pironman5 config."""
         import json, os
         cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
         if not os.path.exists(cli_cfg):
-            return
+            return {}
         try:
             with open(cli_cfg, 'r') as f:
                 cli = json.load(f).get('system', {})
         except Exception:
-            return
-        # Only sync if CLI has actual SMTP settings
-        if not cli.get('smtp_server') and not cli.get('send_email_to'):
-            return
-        patch = {k: cli[k] for k in self.EMAIL_KEYS if k in cli}
+            return {}
+        patch = {k: cli[k] for k in self.EMAIL_KEYS if cli.get(k)}
         if patch:
             self.event.publish('config_changed', patch)
             self.log.info(f'Synced email config from pipower5 CLI: {list(patch.keys())}')
+        return patch
 
     @log_error
     def is_ready(self):
@@ -153,8 +154,13 @@ class PiPower5Addon(Addon):
         return patch
 
     def _write_cli_config(self, patch):
-        """Write email config changes to pipower5 CLI config for udev/CLI sync."""
+        """Write email config changes to pipower5 CLI config for udev/CLI sync.
+        Only writes non-empty values — empty strings/lists are treated as 'not set'."""
         import json, os
+        # Filter out empty values to avoid overwriting good config with blanks
+        clean = {k: v for k, v in patch.items() if v not in ('', [], None)}
+        if not clean:
+            return
         cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
         os.makedirs(os.path.dirname(cli_cfg), exist_ok=True)
         current = {}
@@ -163,7 +169,7 @@ class PiPower5Addon(Addon):
                 current = json.load(f)
         if 'system' not in current:
             current['system'] = {}
-        current['system'].update(patch)
+        current['system'].update(clean)
         with open(cli_cfg, 'w') as f:
             json.dump(current, f, indent=4)
 
