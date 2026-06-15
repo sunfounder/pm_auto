@@ -167,7 +167,7 @@ class PiPower5Addon(Addon):
                 current = json.load(f)
         if 'system' not in current:
             current['system'] = {}
-        current['system'].update(clean)
+        current['system'].update(patch)
         with open(cli_cfg, 'w') as f:
             json.dump(current, f, indent=4)
 
