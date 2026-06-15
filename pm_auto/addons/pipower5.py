@@ -13,6 +13,9 @@ class PiPower5Addon(Addon):
         'pipower5_buzz_sequence': {},
     }
 
+    EMAIL_KEYS = ('send_email_on', 'send_email_to', 'smtp_server',
+                  'smtp_port', 'smtp_email', 'smtp_password', 'smtp_security')
+
     @log_error
     def __init__(self, *args, config=None, log=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,6 +39,11 @@ class PiPower5Addon(Addon):
             self._is_ready = False
             return
 
+        # Sync email config from pipower5 CLI to pironman5 config, then merge into defaults
+        cli_email = self._sync_email_from_cli()
+        if cli_email:
+            config = {**(config or {}), **cli_email}
+
         self.update_config(config, init=True)
 
         self._apply_buzz_on()
@@ -44,6 +52,24 @@ class PiPower5Addon(Addon):
         self._last_shutdown_request = None
         self._was_input_plugged_in = self.pipower5.read_is_input_plugged_in()
         self._is_ready = True
+
+    def _sync_email_from_cli(self):
+        """On init, copy email settings from pipower5 CLI config.
+        Returns merged dict for init, and publishes to pironman5 config."""
+        import json, os
+        cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
+        if not os.path.exists(cli_cfg):
+            return {}
+        try:
+            with open(cli_cfg, 'r') as f:
+                cli = json.load(f).get('system', {})
+        except Exception:
+            return {}
+        patch = {k: cli[k] for k in self.EMAIL_KEYS if cli.get(k)}
+        if patch:
+            self.event.publish('config_changed', patch)
+            self.log.info(f'Synced email config from pipower5 CLI: {list(patch.keys())}')
+        return patch
 
     @log_error
     def is_ready(self):
@@ -71,7 +97,20 @@ class PiPower5Addon(Addon):
 
     @log_error
     def test_smtp(self):
-        return self.pipower5.test_smtp(self._config)
+        # Merge CLI config as fallback for SMTP fields that may be empty in dashboard config
+        import json, os
+        cfg = dict(self._config)
+        cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
+        if os.path.exists(cli_cfg):
+            try:
+                with open(cli_cfg, 'r') as f:
+                    cli = json.load(f).get('system', {})
+                for k in ('send_email_to', 'smtp_server', 'smtp_email', 'smtp_password', 'smtp_port', 'smtp_security'):
+                    if not cfg.get(k) and cli.get(k):
+                        cfg[k] = cli[k]
+            except Exception:
+                pass
+        return self.pipower5.test_smtp(cfg)
 
     def _apply_buzz_on(self):
         """Sync pipower5_buzz_on config list to kernel driver bitmask."""
@@ -105,9 +144,7 @@ class PiPower5Addon(Addon):
             self.pipower5.set_buzzer_volume(val)
             patch['pipower5_buzzer_volume'] = val
 
-        for key in ('send_email_on', 'send_email_to', 'smtp_server',
-                     'smtp_port', 'smtp_email', 'smtp_password', 'smtp_security',
-                     'pipower5_buzz_on', 'pipower5_buzz_sequence'):
+        for key in self.EMAIL_KEYS + ('pipower5_buzz_on', 'pipower5_buzz_sequence'):
             if key in cfg:
                 patch[key] = cfg[key]
 
@@ -119,7 +156,33 @@ class PiPower5Addon(Addon):
         if 'pipower5_buzz_on' in cfg and not init:
             self._apply_buzz_on()
 
+        # Reverse-sync email config to pipower5 CLI config
+        email_patch = {k: cfg[k] for k in self.EMAIL_KEYS if k in cfg}
+        if email_patch:
+            try:
+                self._write_cli_config(email_patch)
+            except Exception as e:
+                self.log.debug(f'CLI config sync skipped: {e}')
+
         return patch
+
+    def _write_cli_config(self, patch):
+        """Write email config changes to pipower5 CLI config for udev/CLI sync.
+        Only writes non-empty values — empty strings/lists are treated as 'not set'."""
+        import json, os
+        if not patch:
+            return
+        cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
+        os.makedirs(os.path.dirname(cli_cfg), exist_ok=True)
+        current = {}
+        if os.path.exists(cli_cfg):
+            with open(cli_cfg, 'r') as f:
+                current = json.load(f)
+        if 'system' not in current:
+            current['system'] = {}
+        current['system'].update(patch)
+        with open(cli_cfg, 'w') as f:
+            json.dump(current, f, indent=4)
 
     @log_error
     def publish_data(self):
