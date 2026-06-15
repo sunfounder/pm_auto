@@ -157,9 +157,7 @@ class PiPower5Addon(Addon):
         """Write email config changes to pipower5 CLI config for udev/CLI sync.
         Only writes non-empty values — empty strings/lists are treated as 'not set'."""
         import json, os
-        # Filter out empty values to avoid overwriting good config with blanks
-        clean = {k: v for k, v in patch.items() if v not in ('', [], None)}
-        if not clean:
+        if not patch:
             return
         cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
         os.makedirs(os.path.dirname(cli_cfg), exist_ok=True)
