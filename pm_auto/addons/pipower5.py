@@ -97,7 +97,20 @@ class PiPower5Addon(Addon):
 
     @log_error
     def test_smtp(self):
-        return self.pipower5.test_smtp(self._config)
+        # Merge CLI config as fallback for SMTP fields that may be empty in dashboard config
+        import json, os
+        cfg = dict(self._config)
+        cli_cfg = os.path.expanduser('~/.config/pipower5/config.json')
+        if os.path.exists(cli_cfg):
+            try:
+                with open(cli_cfg, 'r') as f:
+                    cli = json.load(f).get('system', {})
+                for k in ('send_email_to', 'smtp_server', 'smtp_email', 'smtp_password', 'smtp_port', 'smtp_security'):
+                    if not cfg.get(k) and cli.get(k):
+                        cfg[k] = cli[k]
+            except Exception:
+                pass
+        return self.pipower5.test_smtp(cfg)
 
     def _apply_buzz_on(self):
         """Sync pipower5_buzz_on config list to kernel driver bitmask."""
