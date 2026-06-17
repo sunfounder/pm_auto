@@ -35,10 +35,7 @@ class WS2812Addon(Addon):
         self.counter = 0
         self.counter_max = 100
 
-        # Pi 5 uses /dev/spidev10.0 (RP1 chip), older Pi models use /dev/spidev0.0
-        import glob
-        _spi_devs = glob.glob('/dev/spidev*')
-        if not _spi_devs:
+        if not path.exists('/dev/spidev0.0'):
             self.log.error("SPI not enabled")
         else:
             try:
