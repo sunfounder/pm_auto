@@ -116,6 +116,8 @@ class PMAuto:
         '''
         self.log.info(f"PM Auto new config: {config}")
         patch = self.addons.update_config(config)
+        if 'temperature_unit' in config:
+            patch['temperature_unit'] = config['temperature_unit']
         if len(patch) > 0:
             self.log.info(f"PM Auto Update config patch: {patch}")
         return patch
