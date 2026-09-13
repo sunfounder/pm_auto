@@ -22,11 +22,9 @@
 
 from __future__ import division
 from PIL import Image, ImageDraw, ImageFont
-from importlib.resources import files as resource_files
 
 from .i2c import I2C
-
-__package_name__ = __name__.split('.')[0]
+from .utils import get_font
 
 # Constants
 SSD1306_I2C_ADDRESS_1 = 0x3C
@@ -296,7 +294,7 @@ class SSD1306():
 
         self.image = Image.new('1', (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image)
-        self.font_path = str(resource_files(__package_name__).joinpath('fonts/UbuntuSans-Regular.ttf'))
+        self.font_path = get_font("UbuntuSans-Regular.ttf")
 
 
     def clear(self):
