@@ -21,6 +21,7 @@ DEFAULT_CONFIG = {
     'oled_network_interface': 'all',  # 'all' or the name of the interface, normally 'wlan0' for WiFi, 'eth0' for Ethernet
     'oled_sleep': False,
     'oled_sleep_timeout': 10,
+    'virtual_interface_prefixes': ['veth', 'br-', 'docker', 'virbr', 'vmnet'],
     'oled_pages': [
         'performance',
         'ips',
