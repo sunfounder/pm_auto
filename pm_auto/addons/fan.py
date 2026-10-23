@@ -208,7 +208,10 @@ class FanAddon(Addon):
             if self.spc_fan.is_ready():
                 self.spc_fan.set_power(power)
                 data['spc_fan_power'] = power
-            if self.pwm_fan.is_ready():
+            # Only drive the PWM fan ourselves when the OS does not already
+            # own it (TEMP_CONTROL_INTERVENE_OS): on Ubuntu the system fan
+            # is handled by the kernel thermal governor.
+            if self.pwm_fan.is_ready() and self.pwm_fan.is_supported():
                 self.pwm_fan.set_state(self.level)
                 data['pwm_fan_speed'] = self.pwm_fan.get_speed()
 
@@ -436,10 +439,31 @@ class PWMFan(Fan):
             self.enable_control = True
         self._is_ready = True
 
+    # Cooling device whose `type` is the Pi PWM fan.  The numbering of
+    # /sys/class/thermal/cooling_device* is NOT stable across kernels or
+    # distros: on Ubuntu 26.04 (kernel 7.0) cooling_device0 is
+    # 'PCIe_Port_Link_Speed_0002:00:00.0' while the fan is cooling_device1.
+    # Writing fan levels into the PCIe link-speed cooler changes the link
+    # speed of whatever sits on that PCIe port (e.g. an NVMe), so resolve
+    # the device by type and never by index.
+    FAN_COOLING_DEVICE_TYPE = 'pwm-fan'
+
+    @staticmethod
+    def find_cooling_device():
+        import glob
+        for dev in sorted(glob.glob('/sys/class/thermal/cooling_device*')):
+            try:
+                with open(f'{dev}/type', 'r') as f:
+                    if f.read().strip() == PWMFan.FAN_COOLING_DEVICE_TYPE:
+                        return f'{dev}/cur_state'
+            except Exception:
+                continue
+        return None
+
     @staticmethod
     def pwm_fan_supported():
         from os import path
-        return path.exists('/sys/class/thermal/cooling_device0/cur_state') and path.exists('/sys/devices/platform/cooling_fan')
+        return PWMFan.find_cooling_device() is not None and path.exists('/sys/devices/platform/cooling_fan')
 
     @log_error
     @check_ready
@@ -449,7 +473,10 @@ class PWMFan(Fan):
     @log_error
     @check_ready
     def get_state(self):
-        path = '/sys/class/thermal/cooling_device0/cur_state'
+        path = PWMFan.find_cooling_device()
+        if not path:
+            self.log.error('pwm fan cooling device not found')
+            return 0
         try:
             with open(path, 'r') as f:
                 cur_state = int(f.read())
@@ -470,10 +497,21 @@ class PWMFan(Fan):
             elif level < 0:
                 level = 0
 
-            cmd = f"echo '{level}' | tee -a /sys/class/thermal/cooling_device0/cur_state"
-            result = subprocess.check_output(cmd, shell=True)
+            path = PWMFan.find_cooling_device()
+            if not path:
+                self.log.error('pwm fan cooling device not found, skip setting fan level')
+                return None
+            # Write the level straight to sysfs: the old implementation used
+            # `echo level | tee -a <sysfs>`, and O_APPEND is rejected by sysfs
+            # (EINVAL), so it failed on every call.
+            try:
+                with open(path, 'w') as f:
+                    f.write(str(level))
+            except Exception as e:
+                self.log.error(f'set pwm fan state error: {e}')
+                return None
 
-            return result
+            return level
 
     @log_error
     @check_ready
