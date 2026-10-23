@@ -32,8 +32,17 @@ class WS2812Addon(Addon):
         super().__init__(*args, **kwargs)
 
         self.strip = None
+        self._need_turn_off = False
         self.counter = 0
         self.counter_max = 100
+
+        if not getattr(self, 'enable', True):
+            # RGB is disabled by config: keep the addon registered (so it can be
+            # re-enabled at runtime) but never open the SPI bus, so the bus stays
+            # free for the user's own devices.
+            self._is_ready = True
+            self.log.info("RGB disabled, WS2812 not initialized (SPI untouched)")
+            return
 
         if not path.exists('/dev/spidev0.0'):
             self.log.error("SPI not enabled")
@@ -45,6 +54,8 @@ class WS2812Addon(Addon):
 
     @log_error
     def init(self):
+        if self.strip is not None:
+            return
         spi = board.SPI()
         PIXEL_ORDER = neopixel.GRB
 
@@ -55,6 +66,7 @@ class WS2812Addon(Addon):
         self.strip.fill(0)
         self.strip.show()
         self._is_ready = True
+        self.log.info("WS2812 initialized")
 
     @log_error
     def update_config(self, config, init=False):
@@ -90,6 +102,10 @@ class WS2812Addon(Addon):
             else:
                 self.enable = _enable
                 patch['rgb_enable'] = self.enable
+                if not self.enable:
+                    # Ask the working loop to write one all-zero frame; all SPI
+                    # access stays in that single task (no cross-thread writes).
+                    self._need_turn_off = True
                 self.log.debug(f"Update RGB enable: {self.enable}")
         if 'rgb_color' in config:
             _color = config['rgb_color']
@@ -190,7 +206,17 @@ class WS2812Addon(Addon):
 
     @log_error
     def clear(self):
+        if self.strip is None:
+            return
         self.strip.fill(0)
+
+    @log_error
+    def turn_off(self):
+        '''Write one all-zero frame (LEDs off), then leave the bus alone.'''
+        if self.strip is None:
+            return
+        self.strip.fill(0)
+        self.strip.show()
 
     @log_error
     def fill(self, color:str='#000000'):
@@ -239,10 +265,21 @@ class WS2812Addon(Addon):
 
         while self.running:
             if not self.enable:
-                self.clear()
-                self.strip.show()
+                # RGB disabled: turn the LEDs off once, then leave the SPI bus
+                # alone completely (nothing is written until it is re-enabled).
+                if self._need_turn_off:
+                    self._need_turn_off = False
+                    self.turn_off()
                 await asyncio.sleep(1)
                 continue
+            if self.strip is None:
+                # Re-enabled at runtime after having been disabled at startup.
+                try:
+                    self.init()
+                except Exception as e:
+                    self.log.error("Failed to initialize WS2812 Service: %s" % e)
+                    await asyncio.sleep(5)
+                    continue
             try:
                 if self.style in RGB_STYLES:
                     style_func = getattr(self, self.style)
@@ -260,8 +297,7 @@ class WS2812Addon(Addon):
 
     @log_error
     async def _stop(self):
-        self.clear()
-        self.strip.show()
+        self.turn_off()
 
     # styles
     async def solid(self):
