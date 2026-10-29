@@ -1,4 +1,5 @@
 import time
+from typing import Optional
 
 from importlib.resources import files as resource_files
 from os import path
@@ -106,15 +107,42 @@ class DebounceRunner():
     def __call__(self):
         return self.run()
 
-def softlink_gpiochip0_to_gpiochip4():
-    ''' Softlink gpiochip0 device to gpiochip4. '''
+RP1_GPIO_COMPATIBLE = 'raspberrypi,rp1-gpio'
+GPIOZERO_PI5_CHIP = '/dev/gpiochip4'
+
+def find_rp1_gpiochip() -> Optional[str]:
+    ''' Return the /dev path of the Pi 5 header GPIO chip (RP1), or None.
+
+    The kernel does not keep a stable number for this chip (gpiochip4,
+    gpiochip0, gpiochip15...), so match it by its device tree compatible.
+    '''
+    from pathlib import Path
+    for dev in sorted(Path('/sys/bus/gpio/devices').glob('gpiochip*')):
+        compatible = dev / 'of_node' / 'compatible'
+        if compatible.is_file() and \
+                RP1_GPIO_COMPATIBLE in compatible.read_text().split('\0'):
+            return f'/dev/{dev.name}'
+    return None
+
+def softlink_rp1_gpiochip_to_gpiochip4() -> None:
+    ''' Point gpiochip4, which gpiozero opens on a Pi 5, at the RP1 chip. '''
     import os
-    if not os.path.exists('/dev/gpiochip0'):
-        raise Exception('gpiochip0 device not found')
-    if not os.path.exists('/dev/gpiochip4'):
-        status, result = run_command('ln -s /dev/gpiochip0 /dev/gpiochip4')
-        if status != 0:
-            raise Exception(f'Failed to softlink gpiochip0 to gpiochip4: {result}')
+    rp1_chip = find_rp1_gpiochip()
+    if rp1_chip is None:
+        return
+    if os.path.realpath(GPIOZERO_PI5_CHIP) == os.path.realpath(rp1_chip):
+        return
+    if os.path.exists(GPIOZERO_PI5_CHIP) and not os.path.islink(GPIOZERO_PI5_CHIP):
+        return
+    try:
+        if os.path.islink(GPIOZERO_PI5_CHIP):
+            os.remove(GPIOZERO_PI5_CHIP)
+        os.symlink(rp1_chip, GPIOZERO_PI5_CHIP)
+    except OSError as e:
+        raise Exception(f'Failed to softlink {rp1_chip} to {GPIOZERO_PI5_CHIP}: {e}') from e
+
+# Former name, kept for external callers
+softlink_gpiochip0_to_gpiochip4 = softlink_rp1_gpiochip_to_gpiochip4
 
 def hex_to_rgb(hex):
     ''' str or hex, eg: 'ffffff', '#ffffff', '#FFFFFF' '''

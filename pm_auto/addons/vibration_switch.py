@@ -1,5 +1,5 @@
 from pm_auto.libs.addon import Addon
-from pm_auto.libs.utils import log_error, softlink_gpiochip0_to_gpiochip4
+from pm_auto.libs.utils import log_error, softlink_rp1_gpiochip_to_gpiochip4
 
 class VibrationSwitchAddon(Addon):
     def __init__(self, *args, **kwargs):
@@ -52,8 +52,8 @@ class VibrationSwitchAddon(Addon):
 
         from gpiozero import DigitalInputDevice
         try:
-            # Fix gpiozero reads gpiochip4 while new kernel changed to gpiochip0
-            softlink_gpiochip0_to_gpiochip4()
+            # gpiozero opens gpiochip4 on a Pi 5, the RP1 chip number varies by kernel
+            softlink_rp1_gpiochip_to_gpiochip4()
 
             if self.device is not None:
                 self.device.close()

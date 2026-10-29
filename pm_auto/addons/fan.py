@@ -1,5 +1,5 @@
 from pm_auto.libs.addon import Addon
-from pm_auto.libs.utils import run_command, log_error, softlink_gpiochip0_to_gpiochip4
+from pm_auto.libs.utils import run_command, log_error
 
 import subprocess
 import os
