@@ -540,8 +540,12 @@ class PWMFan(Fan):
     @log_error
     @check_ready
     def off(self):
-        if not self.is_supported():
-            self.set_state(0)
+        # Leave cur_state alone.  On systems where the OS owns the PWM fan
+        # (TEMP_CONTROL_INTERVENE_OS, e.g. Ubuntu) forcing it to 0 fights the
+        # kernel thermal governor, which is the one driving the fan; on
+        # Raspberry Pi OS the kernel re-claims the fan once the addon exits,
+        # so there is nothing of ours to restore either.
+        return
 
     @log_error
     @check_ready
