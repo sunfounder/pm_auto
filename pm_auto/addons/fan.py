@@ -211,8 +211,13 @@ class FanAddon(Addon):
             # Only drive the PWM fan ourselves when the OS does not already
             # own it (TEMP_CONTROL_INTERVENE_OS): on Ubuntu the system fan
             # is handled by the kernel thermal governor.
-            if self.pwm_fan.is_ready() and self.pwm_fan.is_supported():
-                self.pwm_fan.set_state(self.level)
+            # Reading the tachometer must stay outside that check: on Ubuntu
+            # we may not write cur_state, but the RPM is still ours to report.
+            # Gating both on is_supported() left pwm_fan_speed unpublished
+            # there, so the OLED and the dashboard showed 0 rpm forever.
+            if self.pwm_fan.is_ready():
+                if self.pwm_fan.is_supported():
+                    self.pwm_fan.set_state(self.level)
                 data['pwm_fan_speed'] = self.pwm_fan.get_speed()
 
             if changed:
