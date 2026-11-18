@@ -9,15 +9,16 @@ class Pi5PowerButtonAddon(Addon):
         self.button = Pi5PowerButton(log=self.log)
         self.button.set_button_callback(self.button_callback)
         # self.button.set_shutdown_callback(self.shutdown_callback)
-        self._is_ready = True
-        # The button still works without an exclusive grab, so a failed grab is
-        # a degraded state, not a dead addon. Surface it instead of only
-        # writing a log line, so status APIs and the UI can tell the difference.
+        # Without an exclusive grab the events go to whichever process holds
+        # the grab, so the button is unusable for us: report the addon as not
+        # ready instead of pretending it works. The rest of the service keeps
+        # running because the failure no longer escapes this constructor.
         self.grabbed = self.button.grabbed
+        self._is_ready = self.grabbed
         if not self.grabbed:
-            self.log.warning(
-                "Pi5 power button is shared with another process: "
-                "control is degraded (no exclusive grab)")
+            self.log.error(
+                "Pi5 power button is held by another process: "
+                "button control is unavailable")
             if self.event is not None:
                 self.event.publish('pi5_power_button_degraded', {'grabbed': False})
 
