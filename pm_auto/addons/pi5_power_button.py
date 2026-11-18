@@ -6,7 +6,7 @@ class Pi5PowerButtonAddon(Addon):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.button = Pi5PowerButton()
+        self.button = Pi5PowerButton(log=self.log)
         self.button.set_button_callback(self.button_callback)
         # self.button.set_shutdown_callback(self.shutdown_callback)
         self._is_ready = True

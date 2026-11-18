@@ -136,15 +136,29 @@ class Pi5PowerButton():
 
     READ_INTERVAL = 0.1 # 100ms
 
-    def __init__(self, grab=True, debug=False):
+    def __init__(self, grab=True, debug=False, log=None):
         device_path = find_device_path('pwr_button')
         if not device_path:
             raise Exception(f'Power button device not found')
         
         self.dev = InputDevice(device_path)
+        self.grabbed = False
         # grab the device to prevent other programs from reading it
         if grab:
-            self.dev.grab()
+            try:
+                self.dev.grab()
+                self.grabbed = True
+            except OSError as e:
+                # Another process already holds the device (EBUSY). An
+                # exclusive grab is only an optimisation: the device can still
+                # be read without it, so keep the button working instead of
+                # failing the caller - and with it the whole service.
+                msg = (f'Could not grab {device_path} ({e}); '
+                       f'continuing without an exclusive grab')
+                if log is not None:
+                    log.warning(msg)
+                else:
+                    print(msg)
 
         self.status = ButtonStatus.RELEASED
         self.last_key_down_time = 0
