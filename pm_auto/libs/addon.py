@@ -20,7 +20,13 @@ class Addon:
         self.running = False
         self.peripherals = peripherals or []
         self._task: Optional[asyncio.Task] = None
-        self.update_config(config, init=True)
+        # Merge the accepted values back into self.config: update_config()
+        # validates and returns them as a patch.  Subclasses read self.config
+        # in their own __init__ to set up hardware (FanAddon takes the fan pin
+        # and the fan-LED pin/mode from it), and dropping the patch left those
+        # reads on DEFAULT_CONFIG, so a configured value was silently ignored
+        # every time the service started.
+        self.config.update(self.update_config(config, init=True) or {})
 
     @log_error
     def is_ready(self) -> bool:
